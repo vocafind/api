@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35122.118
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "vocafind_api", "vocafind_api.csproj", "{B36E02AC-CBFD-4651-84CA-256E0B053FA8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B36E02AC-CBFD-4651-84CA-256E0B053FA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B36E02AC-CBFD-4651-84CA-256E0B053FA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B36E02AC-CBFD-4651-84CA-256E0B053FA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B36E02AC-CBFD-4651-84CA-256E0B053FA8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {832FCB5B-6920-415D-AA9A-BB19060C1400}
+	EndGlobalSection
+EndGlobal
