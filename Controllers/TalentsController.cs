@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -18,19 +19,22 @@ namespace vocafind_api.Controllers
         private readonly IMapper _mapper;
         private readonly IEmailService _emailService;
         private readonly ILogger<TalentsController> _logger;
+        private readonly JwtService _jwtService;
 
         public TalentsController(
             TalentcerdasContext context,
             IWebHostEnvironment env,
             IMapper mapper,
             IEmailService emailService,
-            ILogger<TalentsController> logger)
+            ILogger<TalentsController> logger,
+            JwtService jwtService)
         {
             _context = context;
             _env = env;
             _mapper = mapper;
             _emailService = emailService;
             _logger = logger;
+            _jwtService = jwtService;
         }
 
 
@@ -230,8 +234,71 @@ namespace vocafind_api.Controllers
             }
         }
 
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromForm] TalentsLoginDTO dto)
+        {
+            var talent = await _context.Talents.FirstOrDefaultAsync(t => t.Email == dto.Email);
+            if (talent == null)
+            {
+                return Unauthorized(new { message = "Akun tidak ditemukan!" });
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, talent.Password))
+            {
+                return Unauthorized(new { message = "Password salah!" });
+            }
+
+           /* if (talent.StatusVerifikasi == "0")
+            {
+                return BadRequest(new { message = "Silakan verifikasi email/identitas Anda terlebih dahulu." });
+            }*/
+
+            if (talent.StatusAkun == "Belum Terverifikasi")
+            {
+                return BadRequest(new { message = "Akun belum diverifikasi oleh Admin." });
+            }
+
+            if (talent.StatusAkun == "Tidak Terverifikasi")
+            {
+                return BadRequest(new { message = "Akun tidak terverifikasi. Hubungi Admin." });
+            }
+
+            // ✅ generate JWT token
+            var token = _jwtService.GenerateToken(talent);
+
+            return Ok(new
+            {
+                message = $"Login berhasil, Selamat datang {talent.Nama}",
+                token = token,
+                talentId = talent.TalentId
+            });
+        }
 
 
+
+        [Authorize] // ini kunci, hanya bisa diakses dengan JWT valid
+        [HttpGet("profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            // Ambil data user dari token
+            var talentId = User.FindFirst("TalentId")?.Value;
+            if (talentId == null)
+                return Unauthorized(new { message = "Token tidak valid" });
+
+            var talent = await _context.Talents.FindAsync(talentId);
+            if (talent == null)
+                return NotFound(new { message = "Data talent tidak ditemukan" });
+
+            return Ok(new
+            {
+                talent.TalentId,
+                talent.Nama,
+                talent.Email,
+                talent.StatusAkun,
+                talent.StatusVerifikasi,
+                talent.CreatedAt
+            });
+        }
 
 
 
