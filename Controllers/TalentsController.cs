@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using vocafind_api.DTO;
 using vocafind_api.Models;
+using vocafind_api.Services;
 
 namespace vocafind_api.Controllers
 {
@@ -15,30 +16,22 @@ namespace vocafind_api.Controllers
         private readonly TalentcerdasContext _context;
         private readonly IWebHostEnvironment _env;
         private readonly IMapper _mapper;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<TalentsController> _logger;
 
-        public TalentsController(TalentcerdasContext context, IWebHostEnvironment env, IMapper mapper)
+        public TalentsController(
+            TalentcerdasContext context,
+            IWebHostEnvironment env,
+            IMapper mapper,
+            IEmailService emailService,
+            ILogger<TalentsController> logger)
         {
             _context = context;
             _env = env;
             _mapper = mapper;
+            _emailService = emailService;
+            _logger = logger;
         }
-
-
-
-
-
-        // ✅ GET: api/talents
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Talent>>> GetAll()
-        {
-            var talents = await _context.Talents
-                .Include(t => t.Hobbies)
-                .Include(t => t.Educations)
-                .ToListAsync();
-
-            return Ok(talents);
-        }
-
 
 
 
@@ -70,9 +63,6 @@ namespace vocafind_api.Controllers
 
             return Ok(talent);
         }
-
-
-
 
 
 
@@ -153,7 +143,126 @@ namespace vocafind_api.Controllers
         }
 
 
+        [HttpPost("verify")]
+        public async Task<IActionResult> VerifyTalent([FromBody] TalentsVerifyDTO dto)
+        {
+            var talent = await _context.Talents
+                .FirstOrDefaultAsync(t => t.TalentId == dto.TalentID);   // dto juga string
+            if (talent == null)
+                return NotFound(new { message = "Talent tidak ditemukan" });
 
+            var allowed = new[] { "Belum Terverifikasi", "Sudah Terverifikasi", "Tidak Terverifikasi" };
+            if (!allowed.Contains(dto.StatusAkun))
+                return BadRequest(new { message = "Status akun tidak valid." });
+
+            var talentData = new
+            {
+                Nama = talent.Nama,
+                Email = talent.Email,
+                TalentID = talent.TalentId
+            };
+
+            // Hapus file KTP kalau status Sudah/Tidak Terverifikasi
+            if (dto.StatusAkun == "Sudah Terverifikasi" || dto.StatusAkun == "Tidak Terverifikasi")
+            {
+                var ktpExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                foreach (var ext in ktpExtensions)
+                {
+                    var filePath = Path.Combine("wwwroot/ktp", $"{talent.TalentId}{ext}");
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                        _logger.LogInformation($"File KTP dihapus: {filePath}");
+                    }
+                }
+            }
+
+            if (dto.StatusAkun == "Sudah Terverifikasi")
+            {
+                talent.StatusAkun = dto.StatusAkun;
+                await _context.SaveChangesAsync();
+
+                string subject = "Akun Talent Anda Sudah Diverifikasi";
+                string body = "Selamat, akun Anda telah diverifikasi oleh admin. Silakan login untuk melanjutkan.";
+
+                await _emailService.SendEmailAsync(talentData.Email, subject, body);
+
+
+                _logger.LogInformation($"Talent {talentData.Email} diverifikasi oleh admin.");
+                return Ok(new { message = "Akun talent berhasil diverifikasi." });
+            }
+            else if (dto.StatusAkun == "Tidak Terverifikasi")
+            {
+                _logger.LogInformation($"Menghapus akun talent ditolak: {talentData.Email} (ID: {talentData.TalentID})");
+
+                // Hapus QR Codes dari registrasi acara (kalau ada)
+                var registrations = _context.TalentAcaraRegistrations
+                    .Where(r => r.TalentId == talent.TalentId)
+                    .ToList();
+
+                foreach (var reg in registrations)
+                {
+                    if (!string.IsNullOrEmpty(reg.QrCodePath) && System.IO.File.Exists(reg.QrCodePath))
+                    {
+                        System.IO.File.Delete(reg.QrCodePath);
+                        _logger.LogInformation($"QR code dihapus: {reg.RegistrationCode}");
+                    }
+                }
+
+                // Hapus akun talent
+                _context.Talents.Remove(talent);
+                await _context.SaveChangesAsync();
+
+                string subject = "Akun Talent Anda Ditolak - Silakan Daftar Ulang";
+                string body = $"Halo {talentData.Nama},<br/>Mohon maaf, akun Anda ditolak karena data tidak valid. Silakan daftar ulang dengan data yang benar.";
+
+                await _emailService.SendEmailAsync(talentData.Email, subject, body);
+
+                return Ok(new { message = "Akun talent ditolak, dihapus, dan email notifikasi dikirim." });
+            }
+            else
+            {
+                // Balik ke Belum Terverifikasi
+                talent.StatusAkun = dto.StatusAkun;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = $"Status akun talent diubah menjadi: {dto.StatusAkun}" });
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // ✅ GET: api/talents
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Talent>>> GetAll()
+        {
+            var talents = await _context.Talents
+                .Include(t => t.Hobbies)
+                .Include(t => t.Educations)
+                .ToListAsync();
+
+            return Ok(talents);
+        }
 
 
 

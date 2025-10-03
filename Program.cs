@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using vocafind_api.Mapping;
 using vocafind_api.Models;
+using vocafind_api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,15 @@ builder.Services.AddDbContext<TalentcerdasContext>(options =>
 
 //auto mapper
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
+
+// Config Email
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email:Smtp"));
+builder.Services.AddTransient<IEmailService, EmailService>();
+
+
+//builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+//builder.Services.AddTransient<IEmailService, EmailService>();
 
 
 
