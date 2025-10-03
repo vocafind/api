@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using vocafind_api.Mapping;
 using vocafind_api.Models;
 
@@ -26,6 +27,25 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+
+// pastikan ini ada agar bisa di akses 
+app.UseStaticFiles();
+
+// khusus untuk folder uploads
+var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

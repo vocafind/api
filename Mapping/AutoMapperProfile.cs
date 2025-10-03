@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using vocafind_api.DTO;
+using vocafind_api.Models;
 
 namespace vocafind_api.Mapping
 {
@@ -6,8 +8,8 @@ namespace vocafind_api.Mapping
     {
         public AutoMapperProfile()
         {
-            /*CreateMap<Talents, TalentsDTO>().ReverseMap();
-            CreateMap<TalentsPostDTO, Talents>().ReverseMap();*/
+            CreateMap<Talent, TalentsRegisterDTO>().ReverseMap();
+            CreateMap<Talent, TalentsUnverifiedDTO>().ReverseMap();
         }
     }
 }
