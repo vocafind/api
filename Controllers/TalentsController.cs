@@ -70,7 +70,7 @@ namespace vocafind_api.Controllers
 
 
 
-        [HttpPost("register")]
+        /*[HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
         {
             // Validasi sederhana bisa ditambah di DTO dengan [Required], [StringLength], [EmailAddress], dsb.
@@ -143,6 +143,87 @@ namespace vocafind_api.Controllers
                 await transaction.RollbackAsync();
                 var inner = ex.InnerException?.Message;
                 return BadRequest(new { error = ex.Message, innerError = inner });
+            }
+        }*/
+
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var talentId = Guid.NewGuid().ToString();
+
+                var talent = new Talent
+                {
+                    TalentId = talentId,
+                    Nama = dto.Nama,
+                    Usia = dto.Usia,
+                    JenisKelamin = dto.JenisKelamin,
+                    Email = dto.Email,
+                    NomorTelepon = dto.NomorTelepon,
+                    Nik = dto.Nik,
+                    Provinsi = Request.Form["provinsi"],
+                    KabupatenKota = Request.Form["kabupaten_kota"],
+                    ProvinsiId = null, // bisa diisi nanti kalau punya ID-nya
+                    KabupatenKotaId = null,
+                    StatusVerifikasi = "0",
+                    StatusAkun = "Belum Terverifikasi",
+                    Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                    FotoProfil = "",
+                    VerificationToken = "",
+                    Alamat = "",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Talents.Add(talent);
+                await _context.SaveChangesAsync();
+
+                // Simpan file KTP
+                if (dto.Ktp != null && dto.Ktp.Length > 0)
+                {
+                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ktp");
+                    if (!Directory.Exists(uploadPath))
+                        Directory.CreateDirectory(uploadPath);
+
+                    var ext = Path.GetExtension(dto.Ktp.FileName);
+                    if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+
+                    var fileName = $"{talentId}{ext}";
+                    var filePath = Path.Combine(uploadPath, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await dto.Ktp.CopyToAsync(stream);
+                    }
+                }
+
+                await transaction.CommitAsync();
+
+                return Ok(new
+                {
+                    message = "Registrasi berhasil. Silakan tunggu verifikasi admin.",
+                    talentId = talent.TalentId,
+                    data = new
+                    {
+                        talent.Nama,
+                        talent.Provinsi,
+                        talent.KabupatenKota,
+                        talent.JenisKelamin,
+                        talent.Usia
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return BadRequest(new
+                {
+                    error = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
             }
         }
 

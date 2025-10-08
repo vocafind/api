@@ -29,5 +29,13 @@ namespace vocafind_api.DTO
         [Required]
         public IFormFile Ktp { get; set; }
 
+
+        /*public string? JenisKelamin { get; set; }
+        public int? Usia { get; set; }*/
+        public int? ProvinsiId { get; set; }
+        public string? Provinsi { get; set; }
+        public int? KabupatenKotaId { get; set; }
+        public string? KabupatenKota { get; set; }
+
     }
 }
