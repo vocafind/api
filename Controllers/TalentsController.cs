@@ -155,6 +155,16 @@ namespace vocafind_api.Controllers
             {
                 var talentId = Guid.NewGuid().ToString();
 
+                string hashed = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+                // Force prefix $2y$ (Laravel standard)
+                if (hashed.StartsWith("$2a$"))
+                {
+                    hashed = "$2y$" + hashed.Substring(4);
+                }
+
+
+
                 var talent = new Talent
                 {
                     TalentId = talentId,
@@ -170,7 +180,7 @@ namespace vocafind_api.Controllers
                     KabupatenKotaId = null,
                     StatusVerifikasi = "0",
                     StatusAkun = "Belum Terverifikasi",
-                    Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                    Password = hashed,
                     FotoProfil = "",
                     VerificationToken = "",
                     Alamat = "",

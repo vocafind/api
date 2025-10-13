@@ -10,6 +10,11 @@ namespace vocafind_api.Mapping
         {
             CreateMap<Talent, TalentsRegisterDTO>().ReverseMap();
             CreateMap<Talent, TalentsUnverifiedDTO>().ReverseMap();
+
+            CreateMap<JobVacancy, LokerUmumDTO>()
+           .ForMember(dest => dest.CompanyName,
+                      opt => opt.MapFrom(src => src.Company.NamaPerusahaan));
+
         }
     }
 }
