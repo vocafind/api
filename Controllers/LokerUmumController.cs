@@ -51,5 +51,28 @@ namespace vocafind_api.Controllers
         }
 
 
+        // GET: api/LokerUmum/{id}
+        [HttpGet("{id}")]
+        public async Task<ActionResult<LokerUmumDetailDTO>> GetById(string id)
+        {
+            var lokerQuery = _context.JobVacancies
+                .Include(j => j.Company)
+                .Include(j => j.JobQualifications)
+                .Include(j => j.JobBenefits)
+                .Include(j => j.JobAdditionalRequirements)
+                .Include(j => j.JobAdditionalFacilities)
+                .Where(j => j.LowonganId == id);
+
+            var loker = await lokerQuery
+                .ProjectTo<LokerUmumDetailDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
+
+            if (loker == null)
+                return NotFound(new { message = "Lowongan tidak ditemukan." });
+
+            return Ok(loker);
+        }
+
+
     }
 }
