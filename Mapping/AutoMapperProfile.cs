@@ -63,6 +63,9 @@ namespace vocafind_api.Mapping
             CreateMap<Company, PerusahaanDTO>();
 
 
+
+
+
             /*---------------------------------------SOCIAL MEDIA-----------------------------------*/
             CreateMap<Social, SocialGetDTO>();      // GET
             CreateMap<SocialPostDTO, Social>();     // POST
@@ -81,6 +84,12 @@ namespace vocafind_api.Mapping
             CreateMap<TalentReferencePutDTO, TalentReference>();   // PUT
 
 
+
+
+            /*---------------------------------------Education-----------------------------------*/
+            CreateMap<Education, EducationGetDTO>();   // GET
+            CreateMap<EducationPostDTO, Education>();  // POST
+            CreateMap<EducationPutDTO, Education>();   // PUT
         }
     }
 }

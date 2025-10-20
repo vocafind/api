@@ -50,7 +50,7 @@
         public string Nama { get; set; } = null!;
         public string Relasi { get; set; } = null!;
 
-        public string? Perusahaan { get; set; }
+        public string? Perusahaan { get; set; } 
 
         public string? Posisi { get; set; }
 
