@@ -111,6 +111,12 @@ namespace vocafind_api.Mapping
             CreateMap<Certification, CertificationGetDTO>();   // GET
             CreateMap<CertificationPostDTO, Certification>();  // POST
             CreateMap<CertificationPutDTO, Certification>();   // PUT
+
+
+            /*---------------------------------------Training-----------------------------------*/
+            CreateMap<Training, TrainingGetDTO>();   // GET
+            CreateMap<TrainingPostDTO, Training>();  // POST
+            CreateMap<TrainingPutDTO, Training>();   // PUT
         }
     }
 }
