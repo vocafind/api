@@ -117,6 +117,12 @@ namespace vocafind_api.Mapping
             CreateMap<Training, TrainingGetDTO>();   // GET
             CreateMap<TrainingPostDTO, Training>();  // POST
             CreateMap<TrainingPutDTO, Training>();   // PUT
+
+
+            /*---------------------------------------SoftSkill-----------------------------------*/
+            CreateMap<SoftSkill, SoftSkillGetDTO>();   // GET
+            CreateMap<SoftSkillPostDTO, SoftSkill>();  // POST
+            CreateMap<SoftSkillPutDTO, SoftSkill>();   // PUT
         }
     }
 }
