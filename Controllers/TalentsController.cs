@@ -146,7 +146,6 @@ namespace vocafind_api.Controllers
             }
         }*/
 
-
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
         {
@@ -394,22 +393,6 @@ namespace vocafind_api.Controllers
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         // ✅ GET: api/talents
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Talent>>> GetAll()
@@ -464,24 +447,6 @@ namespace vocafind_api.Controllers
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         // ✅ POST: api/talents
         [HttpPost]
         public async Task<ActionResult<Talent>> Create([FromBody] Talent talent)
@@ -493,7 +458,7 @@ namespace vocafind_api.Controllers
         }
 
         // ✅ PUT: api/talents/{id}
-        [HttpPut("{id}")]
+        /*[HttpPut("{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] Talent updatedTalent)
         {
             if (id != updatedTalent.TalentId)
@@ -514,7 +479,48 @@ namespace vocafind_api.Controllers
             }
 
             return NoContent();
+        }*/
+
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchTalent(string id, [FromBody] TalentsUpdateDTO updateDto)
+        {
+            var talent = await _context.Talents.FindAsync(id);
+            if (talent == null)
+                return NotFound();
+
+            // Update data berdasarkan DTO
+            if (updateDto.FotoProfil != null) talent.FotoProfil = updateDto.FotoProfil;
+            if (updateDto.Nama != null) talent.Nama = updateDto.Nama;
+            if (updateDto.Alamat != null) talent.Alamat = updateDto.Alamat;
+            if (updateDto.NomorTelepon != null) talent.NomorTelepon = updateDto.NomorTelepon;
+
+            if (updateDto.LokasiKerjaDiinginkan != null)
+                talent.LokasiKerjaDiinginkan = updateDto.LokasiKerjaDiinginkan;
+
+            if (updateDto.StatusPekerjaanSaatIni != null)
+                talent.StatusPekerjaanSaatIni = updateDto.StatusPekerjaanSaatIni;
+
+            if (updateDto.PreferensiGaji.HasValue)
+                talent.PreferensiGaji = updateDto.PreferensiGaji.Value;
+
+            if (updateDto.PreferensiPerjalananDinas != null)
+                talent.PreferensiPerjalananDinas = updateDto.PreferensiPerjalananDinas;
+
+            // 🕒 Handle TimeOnly (jam kerja)
+            if (updateDto.PreferensiJamKerjaMulai.HasValue)
+                talent.PreferensiJamKerjaMulai = updateDto.PreferensiJamKerjaMulai.Value;
+
+            if (updateDto.PreferensiJamKerjaSelesai.HasValue)
+                talent.PreferensiJamKerjaSelesai = updateDto.PreferensiJamKerjaSelesai.Value;
+
+            // Update waktu terakhir perubahan
+            talent.UpdatedAt = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Data profil berhasil diperbarui" });
         }
+
 
         // ✅ DELETE: api/talents/{id}
         [HttpDelete("{id}")]

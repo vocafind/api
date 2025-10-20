@@ -8,9 +8,14 @@ namespace vocafind_api.Mapping
     {
         public AutoMapperProfile()
         {
+            /*---------------------------------------Talent -----------------------------------*/
             CreateMap<Talent, TalentsRegisterDTO>().ReverseMap();
             CreateMap<Talent, TalentsUnverifiedDTO>().ReverseMap();
 
+
+
+
+            /*---------------------------------------Loker Umum -----------------------------------*/
             CreateMap<JobVacancy, LokerUmumDTO>()
            .ForMember(dest => dest.CompanyName,
                       opt => opt.MapFrom(src => src.Company.NamaPerusahaan));
@@ -18,9 +23,6 @@ namespace vocafind_api.Mapping
             /*CreateMap<JobVacancy, LokerUmumDetailDTO>()
             .ForMember(dest => dest.CompanyName,
                      opt => opt.MapFrom(src => src.Company.NamaPerusahaan));*/
-
-
-
 
 
             // Mapping utama
@@ -52,6 +54,25 @@ namespace vocafind_api.Mapping
             CreateMap<JobAdditionalFacility, JobAdditionalFacilityDTO>()
                 .ForMember(dest => dest.Fasilitas,
                            opt => opt.MapFrom(src => src.FasilitasTambahan));
+
+
+
+
+
+            /*---------------------------------------PERUSAHAAN-----------------------------------*/
+            CreateMap<Company, PerusahaanDTO>();
+
+
+            /*---------------------------------------SOCIAL MEDIA-----------------------------------*/
+            CreateMap<Social, SocialGetDTO>();      // GET
+            CreateMap<SocialPostDTO, Social>();     // POST
+            CreateMap<SocialPutDTO, Social>();      // PUT
+
+
+            /*---------------------------------------MINAT KARIR-----------------------------------*/
+            CreateMap<CareerInterest, CareerInterestGetDTO>();      // GET
+            CreateMap<CareerInterestPostDTO, CareerInterest>();     // POST
+            CreateMap<CareerInterestPutDTO, CareerInterest>();      // PUT
 
         }
     }

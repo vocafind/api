@@ -63,39 +63,35 @@ public partial class Talent
 
     public DateTime? LastVerificationRequestAt { get; set; }
 
-    public virtual ICollection<AdditionalSkill> AdditionalSkills { get; set; } = new List<AdditionalSkill>();
-
-    public virtual ICollection<AlumniVokasi> AlumniVokasis { get; set; } = new List<AlumniVokasi>();
-
-    public virtual ICollection<Award> Awards { get; set; } = new List<Award>();
-
+    
+    public virtual ICollection<Social> Socials { get; set; } = new List<Social>();
     public virtual ICollection<CareerInterest> CareerInterests { get; set; } = new List<CareerInterest>();
+    public virtual ICollection<TalentReference> TalentReferences { get; set; } = new List<TalentReference>();
 
-    public virtual ICollection<Certification> Certifications { get; set; } = new List<Certification>();
 
     public virtual ICollection<Education> Educations { get; set; } = new List<Education>();
+    public virtual ICollection<Language> Languages { get; set; } = new List<Language>();
+    public virtual ICollection<Award> Awards { get; set; } = new List<Award>();
+
+
+    public virtual ICollection<Certification> Certifications { get; set; } = new List<Certification>();
+    public virtual ICollection<Training> Training { get; set; } = new List<Training>();
+    public virtual ICollection<SoftSkill> SoftSkills { get; set; } = new List<SoftSkill>();
+    public virtual ICollection<AdditionalSkill> AdditionalSkills { get; set; } = new List<AdditionalSkill>();
+
 
     public virtual ICollection<Experience> Experiences { get; set; } = new List<Experience>();
-
+    public virtual ICollection<WorkHistory> WorkHistories { get; set; } = new List<WorkHistory>();
+    public virtual ICollection<Project> Projects { get; set; } = new List<Project>();
     public virtual ICollection<Hobby> Hobbies { get; set; } = new List<Hobby>();
-
-    public virtual ICollection<Language> Languages { get; set; } = new List<Language>();
-
     public virtual ICollection<Portofolio> Portofolios { get; set; } = new List<Portofolio>();
 
-    public virtual ICollection<Project> Projects { get; set; } = new List<Project>();
 
-    public virtual ICollection<Social> Socials { get; set; } = new List<Social>();
-
-    public virtual ICollection<SoftSkill> SoftSkills { get; set; } = new List<SoftSkill>();
 
     public virtual ICollection<TalentAcaraJobApplication> TalentAcaraJobApplications { get; set; } = new List<TalentAcaraJobApplication>();
 
     public virtual ICollection<TalentAcaraRegistration> TalentAcaraRegistrations { get; set; } = new List<TalentAcaraRegistration>();
 
-    public virtual ICollection<TalentReference> TalentReferences { get; set; } = new List<TalentReference>();
+    public virtual ICollection<AlumniVokasi> AlumniVokasis { get; set; } = new List<AlumniVokasi>();
 
-    public virtual ICollection<Training> Training { get; set; } = new List<Training>();
-
-    public virtual ICollection<WorkHistory> WorkHistories { get; set; } = new List<WorkHistory>();
 }
