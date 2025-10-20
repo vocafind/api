@@ -74,6 +74,13 @@ namespace vocafind_api.Mapping
             CreateMap<CareerInterestPostDTO, CareerInterest>();     // POST
             CreateMap<CareerInterestPutDTO, CareerInterest>();      // PUT
 
+
+            /*---------------------------------------TALENT REFERENCE-----------------------------------*/
+            CreateMap<TalentReference, TalentReferenceGetDTO>();   // GET
+            CreateMap<TalentReferencePostDTO, TalentReference>();  // POST
+            CreateMap<TalentReferencePutDTO, TalentReference>();   // PUT
+
+
         }
     }
 }
