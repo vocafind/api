@@ -90,6 +90,12 @@ namespace vocafind_api.Mapping
             CreateMap<Education, EducationGetDTO>();   // GET
             CreateMap<EducationPostDTO, Education>();  // POST
             CreateMap<EducationPutDTO, Education>();   // PUT
+
+
+            /*---------------------------------------Language-----------------------------------*/
+            CreateMap<Language, LanguageGetDTO>();   // GET
+            CreateMap<LanguagePostDTO, Language>();  // POST
+            CreateMap<LanguagePutDTO, Language>();   // PUT
         }
     }
 }

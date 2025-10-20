@@ -11,7 +11,7 @@ namespace vocafind_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EducationController : ControllerBase
+    public class LanguageController : ControllerBase
     {
         private readonly TalentcerdasContext _context;
         private readonly IWebHostEnvironment _env;
@@ -20,7 +20,7 @@ namespace vocafind_api.Controllers
         private readonly ILogger<TalentsController> _logger;
         private readonly JwtService _jwtService;
 
-        public EducationController(
+        public LanguageController(
             TalentcerdasContext context,
             IWebHostEnvironment env,
             IMapper mapper,
@@ -37,48 +37,48 @@ namespace vocafind_api.Controllers
         }
 
 
-        // ✅ GET: Ambil semua pendidikan talent
+        // ✅ GET: Ambil semua bahasa
         [HttpGet("{talentId}")]
         public async Task<IActionResult> GetByTalent(string talentId)
         {
-            var education = await _context.Educations
+            var language = await _context.Languages
                 .Where(s => s.TalentId == talentId)
-                .ProjectTo<EducationGetDTO>(_mapper.ConfigurationProvider)
+                .ProjectTo<LanguageGetDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return Ok(education);
+            return Ok(language);
         }
 
 
-        // ✅ POST: Tambah pendidikan
+        // ✅ POST: Tambah bahasa
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] EducationPostDTO dto)
+        public async Task<IActionResult> Create([FromBody] LanguagePostDTO dto)
         {
-            var education = _mapper.Map<Education>(dto);
-            education.EducationId = Guid.NewGuid().ToString();
-            education.CreatedAt = DateTime.Now;
-            education.UpdatedAt = DateTime.Now;
+            var language = _mapper.Map<Language>(dto);
+            language.LanguageId = Guid.NewGuid().ToString();
+            language.CreatedAt = DateTime.Now;
+            language.UpdatedAt = DateTime.Now;
 
-            _context.Educations.Add(education);
+            _context.Languages.Add(language);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Pendidikan berhasil ditambahkan" });
+            return Ok(new { message = "Bahasa berhasil ditambahkan" });
         }
 
 
-        // 🛠 PATCH: Update pendidikan
+        // 🛠 PATCH: Update bahasa
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] EducationPutDTO dto)
+        public async Task<IActionResult> Update(string id, [FromBody] LanguagePutDTO dto)
         {
-            var education = await _context.Educations.FindAsync(id);
-            if (education == null) return NotFound();
+            var language = await _context.Languages.FindAsync(id);
+            if (language == null) return NotFound();
 
-            _mapper.Map(dto, education);  // Langsung timpa seluruh field DTO ke model
-            education.UpdatedAt = DateTime.Now;
+            _mapper.Map(dto, language);  // Langsung timpa seluruh field DTO ke model
+            language.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Pendidikan berhasil diperbarui" });
+            return Ok(new { message = "Bahasa berhasil diperbarui" });
         }
 
 
@@ -86,13 +86,13 @@ namespace vocafind_api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var education = await _context.Educations.FindAsync(id);
-            if (education == null) return NotFound();
+            var language = await _context.Languages.FindAsync(id);
+            if (language == null) return NotFound();
 
-            _context.Educations.Remove(education);
+            _context.Languages.Remove(language);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Pendidikan berhasil dihapus" });
+            return Ok(new { message = "Bahasa berhasil dihapus" });
         }
     }
 }
