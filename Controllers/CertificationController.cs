@@ -37,62 +37,62 @@ namespace vocafind_api.Controllers
         }
 
 
-        // ✅ GET: Ambil semua penghargaan
+        // ✅ GET: Ambil semua certification
         [HttpGet("{talentId}")]
         public async Task<IActionResult> GetByTalent(string talentId)
         {
-            var award = await _context.Awards
+            var certification = await _context.Certifications
                 .Where(s => s.TalentId == talentId)
-                .ProjectTo<AwardGetDTO>(_mapper.ConfigurationProvider)
+                .ProjectTo<CertificationGetDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
-            return Ok(award);
+            return Ok(certification);
         }
 
 
-        // ✅ POST: Tambah penghargaan
+        // ✅ POST: Tambah sertifikasi
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] AwardPostDTO dto)
+        public async Task<IActionResult> Create([FromBody] CertificationPostDTO dto)
         {
-            var award = _mapper.Map<Award>(dto);
-            award.AwardId = Guid.NewGuid().ToString();
-            award.CreatedAt = DateTime.Now;
-            award.UpdatedAt = DateTime.Now;
+            var certification = _mapper.Map<Certification>(dto);
+            certification.CertificationId = Guid.NewGuid().ToString();
+            certification.CreatedAt = DateTime.Now;
+            certification.UpdatedAt = DateTime.Now;
 
-            _context.Awards.Add(award);
+            _context.Certifications.Add(certification);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Penghargaan berhasil ditambahkan" });
+            return Ok(new { message = "Sertifikasi berhasil ditambahkan" });
         }
 
 
-        // 🛠 PATCH: Update bahasa
+        // 🛠 PATCH: Update sertifikasi
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] AwardPutDTO dto)
+        public async Task<IActionResult> Update(string id, [FromBody] CertificationPutDTO dto)
         {
-            var award = await _context.Awards.FindAsync(id);
-            if (award == null) return NotFound();
+            var certification = await _context.Certifications.FindAsync(id);
+            if (certification == null) return NotFound();
 
-            _mapper.Map(dto, award);  // Langsung timpa seluruh field DTO ke model
-            award.UpdatedAt = DateTime.Now;
+            _mapper.Map(dto, certification);  // Langsung timpa seluruh field DTO ke model
+            certification.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Penghargaan berhasil diperbarui" });
+            return Ok(new { message = "Sertifikasi berhasil diperbarui" });
         }
 
 
-        // ❌ DELETE: Hapus pendidikan
+        // ❌ DELETE: Hapus sertifikasi
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
-            var award = await _context.Awards.FindAsync(id);
-            if (award == null) return NotFound();
+            var certification = await _context.Certifications.FindAsync(id);
+            if (certification == null) return NotFound();
 
-            _context.Awards.Remove(award);
+            _context.Certifications.Remove(certification);
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Penghargaan berhasil dihapus" });
+            return Ok(new { message = "Sertifikasi berhasil dihapus" });
         }
     }
 }
