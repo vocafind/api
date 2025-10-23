@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using vocafind_api.DTO;
 using vocafind_api.Models;
+using static vocafind_api.DTO.TalentsDTO;
 
 namespace vocafind_api.Mapping
 {
@@ -62,6 +63,14 @@ namespace vocafind_api.Mapping
             /*---------------------------------------PERUSAHAAN-----------------------------------*/
             CreateMap<Company, PerusahaanDTO>();
 
+
+
+
+
+
+
+            /*---------------------------------------TALENT PROFIL / DATA DIRI-----------------------------------*/
+            CreateMap<Talent, TalentsGetDataDiriDTO>();
 
 
 
@@ -129,6 +138,15 @@ namespace vocafind_api.Mapping
             CreateMap<WorkHistory, WorkHistoryGetDTO>();   // GET
             CreateMap<WorkHistoryPostDTO, WorkHistory>();  // POST
             CreateMap<WorkHistoryPutDTO, WorkHistory>();   // PUT
+
+
+            /*---------------------------------------Talent-----------------------------------*/
+            CreateMap<TalentsUpdateDTO, Talent>()
+            .ForMember(dest => dest.FotoProfil, opt => opt.Ignore())
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore())
+            .ForAllMembers(opt => opt.Condition((src, dest, srcMember) => srcMember != null));
+
+
         }
     }
 }

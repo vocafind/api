@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using vocafind_api.DTO;
 using vocafind_api.Models;
 using vocafind_api.Services;
+using static vocafind_api.DTO.TalentsDTO;
 
 namespace vocafind_api.Controllers
 {
@@ -413,7 +414,7 @@ namespace vocafind_api.Controllers
 
 
         // ✅ GET: api/talents/{id}
-        [HttpGet("{id}")]
+        /*[HttpGet("{id}")]
         public async Task<ActionResult<Talent>> GetById(string id)
         {
             var talent = await _context.Talents
@@ -425,10 +426,23 @@ namespace vocafind_api.Controllers
                 return NotFound();
 
             return Ok(talent);
+        }*/
+
+        [HttpGet("profil/data_diri/{id}")]
+        public async Task<IActionResult> GetById(string id)
+        {
+            var dataDiri = await _context.Talents
+                .Where(t => t.TalentId == id)
+                .ProjectTo<TalentsGetDataDiriDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
+
+            if (dataDiri == null)
+                return NotFound(new { message = "Talent tidak ditemukan" });
+
+            return Ok(dataDiri);
         }
 
 
-        
 
 
         /*// ✅ GET: api/talents/{id}
@@ -483,43 +497,43 @@ namespace vocafind_api.Controllers
 
 
         [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchTalent(string id, [FromBody] TalentsUpdateDTO updateDto)
+        public async Task<IActionResult> PatchTalent(string id, [FromForm] TalentsUpdateDTO updateDto)
         {
             var talent = await _context.Talents.FindAsync(id);
             if (talent == null)
                 return NotFound();
 
-            // Update data berdasarkan DTO
-            if (updateDto.FotoProfil != null) talent.FotoProfil = updateDto.FotoProfil;
-            if (updateDto.Nama != null) talent.Nama = updateDto.Nama;
-            if (updateDto.Alamat != null) talent.Alamat = updateDto.Alamat;
-            if (updateDto.NomorTelepon != null) talent.NomorTelepon = updateDto.NomorTelepon;
+            // 🔁 Mapping otomatis semua field teks
+            _mapper.Map(updateDto, talent);
 
-            if (updateDto.LokasiKerjaDiinginkan != null)
-                talent.LokasiKerjaDiinginkan = updateDto.LokasiKerjaDiinginkan;
+            // 📸 Handle upload foto manual
+            if (updateDto.FotoProfil != null && updateDto.FotoProfil.Length > 0)
+            {
+                var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "foto");
+                if (!Directory.Exists(uploadPath))
+                    Directory.CreateDirectory(uploadPath);
 
-            if (updateDto.StatusPekerjaanSaatIni != null)
-                talent.StatusPekerjaanSaatIni = updateDto.StatusPekerjaanSaatIni;
+                var ext = Path.GetExtension(updateDto.FotoProfil.FileName);
+                var fileName = $"{id}{ext}";
+                var filePath = Path.Combine(uploadPath, fileName);
 
-            if (updateDto.PreferensiGaji.HasValue)
-                talent.PreferensiGaji = updateDto.PreferensiGaji.Value;
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await updateDto.FotoProfil.CopyToAsync(stream);
+                }
 
-            if (updateDto.PreferensiPerjalananDinas != null)
-                talent.PreferensiPerjalananDinas = updateDto.PreferensiPerjalananDinas;
+                talent.FotoProfil = $"/uploads/foto/{fileName}";
+            }
 
-            // 🕒 Handle TimeOnly (jam kerja)
-            if (updateDto.PreferensiJamKerjaMulai.HasValue)
-                talent.PreferensiJamKerjaMulai = updateDto.PreferensiJamKerjaMulai.Value;
-
-            if (updateDto.PreferensiJamKerjaSelesai.HasValue)
-                talent.PreferensiJamKerjaSelesai = updateDto.PreferensiJamKerjaSelesai.Value;
-
-            // Update waktu terakhir perubahan
+            // 🕒 update waktu terakhir
             talent.UpdatedAt = DateTime.Now;
+
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Data profil berhasil diperbarui" });
+            return Ok(new { message = "Profil berhasil diperbarui" });
         }
+
+
 
 
         // ✅ DELETE: api/talents/{id}
