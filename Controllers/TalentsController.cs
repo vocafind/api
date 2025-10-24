@@ -40,112 +40,47 @@ namespace vocafind_api.Controllers
 
 
 
-        [HttpGet("unverified")]
-        public async Task<ActionResult<IEnumerable<TalentsUnverifiedDTO>>> GetUnverified()
+        //---------------------------------------------------AUTH----------------------------------------------------
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromForm] TalentsLoginDTO dto)
         {
-            var result = await _context.Talents
-                .Where(t => t.StatusVerifikasi != "guest" && t.StatusAkun == "Belum Terverifikasi")
-                .OrderBy(t => t.UpdatedAt)
-                .ProjectTo<TalentsUnverifiedDTO>(_mapper.ConfigurationProvider)
-                .ToListAsync();
-
-            return Ok(result);
-        }
-
-
-        [HttpGet("unverified/{id}")]
-        public async Task<ActionResult<TalentsUnverifiedDTO>> GetUnverifiedById(string id)
-        {
-            var talent = await _context.Talents
-                .Where(t => t.TalentId == id && t.StatusVerifikasi != "guest" && t.StatusAkun == "Belum Terverifikasi")
-                .ProjectTo<TalentsUnverifiedDTO>(_mapper.ConfigurationProvider)
-                .FirstOrDefaultAsync();
-
+            var talent = await _context.Talents.FirstOrDefaultAsync(t => t.Email == dto.Email);
             if (talent == null)
             {
-                return NotFound(new { message = "Talent tidak ditemukan atau sudah terverifikasi" });
+                return Unauthorized(new { message = "Akun tidak ditemukan!" });
             }
 
-            return Ok(talent);
+            if (!BCrypt.Net.BCrypt.Verify(dto.Password, talent.Password))
+            {
+                return Unauthorized(new { message = "Password salah!" });
+            }
+
+            /* if (talent.StatusVerifikasi == "0")
+             {
+                 return BadRequest(new { message = "Silakan verifikasi email/identitas Anda terlebih dahulu." });
+             }*/
+
+            if (talent.StatusAkun == "Belum Terverifikasi")
+            {
+                return BadRequest(new { message = "Akun belum diverifikasi oleh Admin." });
+            }
+
+            if (talent.StatusAkun == "Tidak Terverifikasi")
+            {
+                return BadRequest(new { message = "Akun tidak terverifikasi. Hubungi Admin." });
+            }
+
+            // ✅ generate JWT token
+            var token = _jwtService.GenerateToken(talent);
+
+            return Ok(new
+            {
+                message = $"Login berhasil, Selamat datang {talent.Nama}",
+                token = token,
+                talentId = talent.TalentId
+            });
         }
 
-
-
-        /*[HttpPost("register")]
-        public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
-        {
-            // Validasi sederhana bisa ditambah di DTO dengan [Required], [StringLength], [EmailAddress], dsb.
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var talentId = Guid.NewGuid().ToString();
-
-                var talent = new Talent
-                {
-                    TalentId = talentId,
-                    Nama = dto.Nama,
-                    Usia = dto.Usia,
-                    JenisKelamin = dto.JenisKelamin,
-                    Alamat = "",
-                    Email = dto.Email,
-                    NomorTelepon = dto.NomorTelepon,
-                    PreferensiGaji = 0,
-                    LokasiKerjaDiinginkan = null,
-                    StatusPekerjaanSaatIni = "",
-                    StatusVerifikasi = "0", // Belum diverifikasi KTP
-                    StatusAkun = "Belum Terverifikasi", // mirror Laravel
-                    Password = BCrypt.Net.BCrypt.HashPassword(dto.Password),
-                    FotoProfil = "",
-                    VerificationToken = "",
-                    Nik = dto.Nik,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-
-                _context.Talents.Add(talent);
-                await _context.SaveChangesAsync();
-
-                // Simpan file KTP
-                if (dto.Ktp != null && dto.Ktp.Length > 0)
-                {
-                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ktp");
-                    if (!Directory.Exists(uploadPath))
-                        Directory.CreateDirectory(uploadPath);
-
-                    // Ambil ekstensi file
-                    var ext = Path.GetExtension(dto.Ktp.FileName);
-                    if (string.IsNullOrEmpty(ext))
-                    {
-                        // fallback default jika ekstensi hilang
-                        ext = ".jpg";
-                    }
-
-                    var fileName = $"{talentId}{ext}";
-                    var filePath = Path.Combine(uploadPath, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await dto.Ktp.CopyToAsync(stream);
-                    }
-                }
-
-
-                await transaction.CommitAsync();
-
-                return Ok(new
-                {
-                    message = "Registrasi berhasil. Silakan tunggu verifikasi admin.",
-                    talentId = talent.TalentId
-                });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                var inner = ex.InnerException?.Message;
-                return BadRequest(new { error = ex.Message, innerError = inner });
-            }
-        }*/
 
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
@@ -238,6 +173,42 @@ namespace vocafind_api.Controllers
         }
 
 
+
+
+
+
+        //---------------------------------------------------VERIFIKASI TALENT----------------------------------------------------
+
+        [HttpGet("unverified")]
+        public async Task<ActionResult<IEnumerable<TalentsUnverifiedDTO>>> GetUnverified()
+        {
+            var result = await _context.Talents
+                .Where(t => t.StatusVerifikasi != "guest" && t.StatusAkun == "Belum Terverifikasi")
+                .OrderBy(t => t.UpdatedAt)
+                .ProjectTo<TalentsUnverifiedDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return Ok(result);
+        }
+
+
+        [HttpGet("unverified/{id}")]
+        public async Task<ActionResult<TalentsUnverifiedDTO>> GetUnverifiedById(string id)
+        {
+            var talent = await _context.Talents
+                .Where(t => t.TalentId == id && t.StatusVerifikasi != "guest" && t.StatusAkun == "Belum Terverifikasi")
+                .ProjectTo<TalentsUnverifiedDTO>(_mapper.ConfigurationProvider)
+                .FirstOrDefaultAsync();
+
+            if (talent == null)
+            {
+                return NotFound(new { message = "Talent tidak ditemukan atau sudah terverifikasi" });
+            }
+
+            return Ok(talent);
+        }
+
+
         [HttpPost("verify")]
         public async Task<IActionResult> VerifyTalent([FromBody] TalentsVerifyDTO dto)
         {
@@ -325,49 +296,10 @@ namespace vocafind_api.Controllers
             }
         }
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromForm] TalentsLoginDTO dto)
-        {
-            var talent = await _context.Talents.FirstOrDefaultAsync(t => t.Email == dto.Email);
-            if (talent == null)
-            {
-                return Unauthorized(new { message = "Akun tidak ditemukan!" });
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, talent.Password))
-            {
-                return Unauthorized(new { message = "Password salah!" });
-            }
-
-           /* if (talent.StatusVerifikasi == "0")
-            {
-                return BadRequest(new { message = "Silakan verifikasi email/identitas Anda terlebih dahulu." });
-            }*/
-
-            if (talent.StatusAkun == "Belum Terverifikasi")
-            {
-                return BadRequest(new { message = "Akun belum diverifikasi oleh Admin." });
-            }
-
-            if (talent.StatusAkun == "Tidak Terverifikasi")
-            {
-                return BadRequest(new { message = "Akun tidak terverifikasi. Hubungi Admin." });
-            }
-
-            // ✅ generate JWT token
-            var token = _jwtService.GenerateToken(talent);
-
-            return Ok(new
-            {
-                message = $"Login berhasil, Selamat datang {talent.Nama}",
-                token = token,
-                talentId = talent.TalentId
-            });
-        }
 
 
 
-        [Authorize] // ini kunci, hanya bisa diakses dengan JWT valid
+        /*[Authorize] // ini kunci, hanya bisa diakses dengan JWT valid
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -389,12 +321,15 @@ namespace vocafind_api.Controllers
                 talent.StatusVerifikasi,
                 talent.CreatedAt
             });
-        }
+        }*/
 
 
 
 
-        // ✅ GET: api/talents
+
+
+
+        //---------------------------------------------------DATA DIRI----------------------------------------------------
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Talent>>> GetAll()
         {
@@ -406,27 +341,6 @@ namespace vocafind_api.Controllers
             return Ok(talents);
         }
 
-
-
-
-
-
-
-
-        // ✅ GET: api/talents/{id}
-        /*[HttpGet("{id}")]
-        public async Task<ActionResult<Talent>> GetById(string id)
-        {
-            var talent = await _context.Talents
-                .Include(t => t.Hobbies)
-                .Include(t => t.Educations)
-                .FirstOrDefaultAsync(t => t.TalentId == id);
-
-            if (talent == null)
-                return NotFound();
-
-            return Ok(talent);
-        }*/
 
         [HttpGet("profil/data_diri/{id}")]
         public async Task<IActionResult> GetById(string id)
@@ -441,59 +355,6 @@ namespace vocafind_api.Controllers
 
             return Ok(dataDiri);
         }
-
-
-
-
-        /*// ✅ GET: api/talents/{id}
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Talent>> GetById(string id)
-        {
-            var talent = await _context.Talents.FindAsync(id);
-
-            if (talent == null)
-                return NotFound();
-
-            return talent;
-        }*/
-
-
-
-
-
-        // ✅ POST: api/talents
-        [HttpPost]
-        public async Task<ActionResult<Talent>> Create([FromBody] Talent talent)
-        {
-            _context.Talents.Add(talent);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = talent.TalentId }, talent);
-        }
-
-        // ✅ PUT: api/talents/{id}
-        /*[HttpPut("{id}")]
-        public async Task<IActionResult> Update(string id, [FromBody] Talent updatedTalent)
-        {
-            if (id != updatedTalent.TalentId)
-                return BadRequest();
-
-            _context.Entry(updatedTalent).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Talents.Any(t => t.TalentId == id))
-                    return NotFound();
-                else
-                    throw;
-            }
-
-            return NoContent();
-        }*/
 
 
         [HttpPatch("{id}")]
@@ -534,9 +395,6 @@ namespace vocafind_api.Controllers
         }
 
 
-
-
-        // ✅ DELETE: api/talents/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
@@ -548,6 +406,223 @@ namespace vocafind_api.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+
+
+
+
+
+
+
+        //---------------------------------------------------SOSMED----------------------------------------------------
+        // ✅ GET: Ambil semua social media talent
+        [HttpGet("profil/media_sosial/{talentId}")]
+        public async Task<IActionResult> GetByTalent(string talentId)
+        {
+            var socials = await _context.Socials
+                .Where(s => s.TalentId == talentId)
+                .ProjectTo<SocialGetDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return Ok(socials);
+        }
+
+
+
+        // ✅ POST: Tambah akun sosial media
+        [HttpPost("profil/media_sosial/")]
+        public async Task<IActionResult> Create([FromBody] SocialPostDTO dto)
+        {
+            var social = _mapper.Map<Social>(dto);
+            social.SocialId = Guid.NewGuid().ToString();
+            social.CreatedAt = DateTime.Now;
+            social.UpdatedAt = DateTime.Now;
+
+            _context.Socials.Add(social);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Social media berhasil ditambahkan" });
+        }
+
+
+
+        // 🛠 PATCH: Update akun sosial
+        [HttpPut("profil/media_sosial/{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] SocialPutDTO dto)
+        {
+            var social = await _context.Socials.FindAsync(id);
+            if (social == null) return NotFound();
+
+            _mapper.Map(dto, social);  // Langsung timpa seluruh field DTO ke model
+            social.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Social media berhasil diperbarui" });
+        }
+
+
+
+        // ❌ DELETE: Hapus akun sosial
+        [HttpDelete("profil/media_sosial/{id}")]
+        public async Task<IActionResult> DeleteSocial(string id)
+        {
+            var social = await _context.Socials.FindAsync(id);
+            if (social == null) return NotFound();
+
+            _context.Socials.Remove(social);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Social media berhasil dihapus" });
+        }
+
+
+
+
+
+
+
+
+
+        //---------------------------------------------------Minat karir----------------------------------------------------
+        // ✅ GET: Ambil semua minat karir talent
+        [HttpGet("profil/minat_karir/{talentId}")]
+        public async Task<IActionResult> GetMinatByTalent(string talentId)
+        {
+            var careerInterests = await _context.CareerInterests
+                .Where(s => s.TalentId == talentId)
+                .Select(s => new CareerInterestGetDTO
+                {
+                    CareerinterestId = s.CareerinterestId,      // ✅ Ditambahkan
+                    TalentId = s.TalentId,
+                    TingkatKetertarikan = s.TingkatKetertarikan,
+                    Alasan = s.Alasan,
+                    BidangKetertarikan = s.BidangKetertarikan,
+                })
+                .ToListAsync();
+
+            return Ok(careerInterests);
+        }
+
+
+        // ✅ POST: Tambah minat karir
+        [HttpPost("profil/minat_karir/")]
+        public async Task<IActionResult> Create([FromBody] CareerInterestPostDTO dto)
+        {
+            var careerInterest = new CareerInterest
+            {
+                CareerinterestId = Guid.NewGuid().ToString(),
+                TalentId = dto.TalentId,
+                TingkatKetertarikan = dto.TingkatKetertarikan,
+                Alasan = dto.Alasan,
+                BidangKetertarikan = dto.BidangKetertarikan,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+            };
+
+            _context.CareerInterests.Add(careerInterest);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Minat karir berhasil ditambahkan" });
+        }
+
+
+        // 🛠 PATCH: Update minat karir
+        [HttpPut("profil/minat_karir/{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] CareerInterestPutDTO dto)
+        {
+            var careerInterest = await _context.CareerInterests.FindAsync(id);
+            if (careerInterest == null) return NotFound();
+
+            // Karena PUT = wajib ganti semua field
+            careerInterest.TingkatKetertarikan = dto.TingkatKetertarikan;
+            careerInterest.Alasan = dto.Alasan;
+            careerInterest.BidangKetertarikan = dto.BidangKetertarikan;
+            careerInterest.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Minat karir berhasil diperbarui" });
+        }
+
+
+        // ❌ DELETE: Hapus Minat karir
+        [HttpDelete("profil/minat_karir/{id}")]
+        public async Task<IActionResult> DeleteMinat(string id)
+        {
+            var careerInterest = await _context.CareerInterests.FindAsync(id);
+            if (careerInterest == null) return NotFound();
+
+            _context.CareerInterests.Remove(careerInterest);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Minat karir berhasil dihapus" });
+        }
+
+
+
+
+
+
+
+
+
+
+        //---------------------------------------------------Referensi----------------------------------------------------
+        // ✅ GET: Ambil semua reference berdasarkan TalentId
+        [HttpGet("profil/referensi/{talentId}")]
+        public async Task<IActionResult> GetReferensiByTalent(string talentId)
+        {
+            var references = await _context.TalentReferences
+                .Where(r => r.TalentId == talentId)
+                .ProjectTo<TalentReferenceGetDTO>(_mapper.ConfigurationProvider)
+                .ToListAsync();
+
+            return Ok(references);
+        }
+
+        // ✅ POST: Tambah reference
+        [HttpPost("profil/referensi/")]
+        public async Task<IActionResult> Create([FromBody] TalentReferencePostDTO dto)
+        {
+            var reference = _mapper.Map<TalentReference>(dto);
+            reference.ReferenceId = Guid.NewGuid().ToString();
+            reference.CreatedAt = DateTime.Now;
+            reference.UpdatedAt = DateTime.Now;
+
+            _context.TalentReferences.Add(reference);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Referensi berhasil ditambahkan" });
+        }
+
+        // 🛠 PUT: Update full reference
+        [HttpPut("profil/referensi/{id}")]
+        public async Task<IActionResult> Update(string id, [FromBody] TalentReferencePutDTO dto)
+        {
+            var reference = await _context.TalentReferences.FindAsync(id);
+            if (reference == null) return NotFound();
+
+            _mapper.Map(dto, reference);
+            reference.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Referensi berhasil diperbarui" });
+        }
+
+        // ❌ DELETE: Hapus referensi
+        [HttpDelete("profil/referensi/{id}")]
+        public async Task<IActionResult> DeleteReferensi(string id)
+        {
+            var reference = await _context.TalentReferences.FindAsync(id);
+            if (reference == null) return NotFound();
+
+            _context.TalentReferences.Remove(reference);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Referensi berhasil dihapus" });
         }
     }
 }
