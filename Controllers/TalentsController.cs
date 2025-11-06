@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using vocafind_api.DTO;
 using vocafind_api.Models;
 using vocafind_api.Services;
@@ -38,139 +39,6 @@ namespace vocafind_api.Controllers
             _jwtService = jwtService;
         }
 
-
-
-        //---------------------------------------------------AUTH----------------------------------------------------
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromForm] TalentsLoginDTO dto)
-        {
-            var talent = await _context.Talents.FirstOrDefaultAsync(t => t.Email == dto.Email);
-            if (talent == null)
-            {
-                return Unauthorized(new { message = "Akun tidak ditemukan!" });
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, talent.Password))
-            {
-                return Unauthorized(new { message = "Password salah!" });
-            }
-
-            /* if (talent.StatusVerifikasi == "0")
-             {
-                 return BadRequest(new { message = "Silakan verifikasi email/identitas Anda terlebih dahulu." });
-             }*/
-
-            if (talent.StatusAkun == "Belum Terverifikasi")
-            {
-                return BadRequest(new { message = "Akun belum diverifikasi oleh Admin." });
-            }
-
-            if (talent.StatusAkun == "Tidak Terverifikasi")
-            {
-                return BadRequest(new { message = "Akun tidak terverifikasi. Hubungi Admin." });
-            }
-
-            // ✅ generate JWT token
-            var token = _jwtService.GenerateToken(talent);
-
-            return Ok(new
-            {
-                message = $"Login berhasil, Selamat datang {talent.Nama}",
-                token = token,
-                talentId = talent.TalentId
-            });
-        }
-
-
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
-            {
-                var talentId = Guid.NewGuid().ToString();
-
-                string hashed = BCrypt.Net.BCrypt.HashPassword(dto.Password);
-
-                // Force prefix $2y$ (Laravel standard)
-                if (hashed.StartsWith("$2a$"))
-                {
-                    hashed = "$2y$" + hashed.Substring(4);
-                }
-
-
-
-                var talent = new Talent
-                {
-                    TalentId = talentId,
-                    Nama = dto.Nama,
-                    Usia = dto.Usia,
-                    JenisKelamin = dto.JenisKelamin,
-                    Email = dto.Email,
-                    NomorTelepon = dto.NomorTelepon,
-                    Nik = dto.Nik,
-                    Provinsi = Request.Form["provinsi"],
-                    KabupatenKota = Request.Form["kabupaten_kota"],
-                    ProvinsiId = null, // bisa diisi nanti kalau punya ID-nya
-                    KabupatenKotaId = null,
-                    StatusVerifikasi = "0",
-                    StatusAkun = "Belum Terverifikasi",
-                    Password = hashed,
-                    FotoProfil = "",
-                    VerificationToken = "",
-                    Alamat = "",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _context.Talents.Add(talent);
-                await _context.SaveChangesAsync();
-
-                // Simpan file KTP
-                if (dto.Ktp != null && dto.Ktp.Length > 0)
-                {
-                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ktp");
-                    if (!Directory.Exists(uploadPath))
-                        Directory.CreateDirectory(uploadPath);
-
-                    var ext = Path.GetExtension(dto.Ktp.FileName);
-                    if (string.IsNullOrEmpty(ext)) ext = ".jpg";
-
-                    var fileName = $"{talentId}{ext}";
-                    var filePath = Path.Combine(uploadPath, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await dto.Ktp.CopyToAsync(stream);
-                    }
-                }
-
-                await transaction.CommitAsync();
-
-                return Ok(new
-                {
-                    message = "Registrasi berhasil. Silakan tunggu verifikasi admin.",
-                    talentId = talent.TalentId,
-                    data = new
-                    {
-                        talent.Nama,
-                        talent.Provinsi,
-                        talent.KabupatenKota,
-                        talent.JenisKelamin,
-                        talent.Usia
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                return BadRequest(new
-                {
-                    error = ex.Message,
-                    inner = ex.InnerException?.Message
-                });
-            }
-        }
 
 
 
@@ -299,7 +167,7 @@ namespace vocafind_api.Controllers
 
 
 
-        /*[Authorize] // ini kunci, hanya bisa diakses dengan JWT valid
+        [Authorize] // ini kunci, hanya bisa diakses dengan JWT valid
         [HttpGet("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -321,7 +189,7 @@ namespace vocafind_api.Controllers
                 talent.StatusVerifikasi,
                 talent.CreatedAt
             });
-        }*/
+        }
 
 
 
@@ -342,6 +210,7 @@ namespace vocafind_api.Controllers
         }
 
 
+        [Authorize]
         [HttpGet("profil/data_diri/{id}")]
         public async Task<IActionResult> GetById(string id)
         {
@@ -367,13 +236,24 @@ namespace vocafind_api.Controllers
             // 🔁 Mapping otomatis semua field teks
             _mapper.Map(updateDto, talent);
 
-            // 📸 Handle upload foto manual
+            // 📸 Handle upload foto
             if (updateDto.FotoProfil != null && updateDto.FotoProfil.Length > 0)
             {
                 var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "foto");
                 if (!Directory.Exists(uploadPath))
                     Directory.CreateDirectory(uploadPath);
 
+                // 🧹 Hapus foto lama jika ada
+                if (!string.IsNullOrEmpty(talent.FotoProfil))
+                {
+                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", talent.FotoProfil.TrimStart('/'));
+                    if (System.IO.File.Exists(oldFilePath))
+                    {
+                        System.IO.File.Delete(oldFilePath);
+                    }
+                }
+
+                // 💾 Simpan foto baru (overwrite pakai nama ID biar unik)
                 var ext = Path.GetExtension(updateDto.FotoProfil.FileName);
                 var fileName = $"{id}{ext}";
                 var filePath = Path.Combine(uploadPath, fileName);
@@ -386,13 +266,14 @@ namespace vocafind_api.Controllers
                 talent.FotoProfil = $"/uploads/foto/{fileName}";
             }
 
-            // 🕒 update waktu terakhir
+            // 🕒 Update waktu terakhir
             talent.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Profil berhasil diperbarui" });
+            return Ok(new { message = "Profil berhasil diperbarui", foto = talent.FotoProfil });
         }
+
 
 
         [HttpDelete("{id}")]

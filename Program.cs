@@ -43,15 +43,18 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(options =>
 {
     options.RequireHttpsMetadata = false;
+    options.RequireHttpsMetadata = false;
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
-        ValidateIssuer = false, // kalau mau lebih aman bisa true
-        ValidateAudience = false, // kalau mau lebih aman bisa true
-        ClockSkew = TimeSpan.Zero
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true, // ?? TAMBAHKAN INI (validasi expiry)
+        ClockSkew = TimeSpan.Zero // Tidak ada grace period
     };
+
 });
 
 

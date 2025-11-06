@@ -56,6 +56,9 @@ public partial class Talent
     public string StatusVerifikasi { get; set; } = null!;
 
     public string? PreferensiPerjalananDinas { get; set; }
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
+
 
     public DateTime? CreatedAt { get; set; }
 
