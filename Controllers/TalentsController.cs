@@ -8,6 +8,8 @@ using System.Security.Claims;
 using vocafind_api.DTO;
 using vocafind_api.Models;
 using vocafind_api.Services;
+using IOFile = System.IO.File; // ✅ Alias untuk System.IO.File
+
 using static vocafind_api.DTO.TalentsDTO;
 
 namespace vocafind_api.Controllers
@@ -22,6 +24,7 @@ namespace vocafind_api.Controllers
         private readonly IEmailService _emailService;
         private readonly ILogger<TalentsController> _logger;
         private readonly JwtService _jwtService;
+        private readonly AesEncryptionHelper _aesHelper;
 
         public TalentsController(
             TalentcerdasContext context,
@@ -29,7 +32,8 @@ namespace vocafind_api.Controllers
             IMapper mapper,
             IEmailService emailService,
             ILogger<TalentsController> logger,
-            JwtService jwtService)
+            JwtService jwtService,
+            AesEncryptionHelper aesHelper)
         {
             _context = context;
             _env = env;
@@ -37,6 +41,7 @@ namespace vocafind_api.Controllers
             _emailService = emailService;
             _logger = logger;
             _jwtService = jwtService;
+            _aesHelper = aesHelper;
         }
 
 
@@ -61,20 +66,60 @@ namespace vocafind_api.Controllers
 
 
         [HttpGet("unverified/{id}")]
-        public async Task<ActionResult<TalentsUnverifiedDTO>> GetUnverifiedById(string id)
+        public async Task<IActionResult> GetUnverifiedById(string id)
         {
             var talent = await _context.Talents
                 .Where(t => t.TalentId == id && t.StatusVerifikasi != "guest" && t.StatusAkun == "Belum Terverifikasi")
-                .ProjectTo<TalentsUnverifiedDTO>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
 
             if (talent == null)
-            {
                 return NotFound(new { message = "Talent tidak ditemukan atau sudah terverifikasi" });
-            }
 
-            return Ok(talent);
+            // 🔓 Dekripsi NIK
+            talent.Nik = _aesHelper.Decrypt(talent.Nik);
+
+            // Map ke DTO
+            var talentDto = _mapper.Map<TalentsUnverifiedDTO>(talent);
+
+            // 🔓 Dekripsi KTP ke Base64
+            string ktpBase64 = null;
+            try
+            {
+                var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ktp");
+                var encryptedFile = Directory.GetFiles(uploadPath, $"{talent.TalentId}.*").FirstOrDefault();
+
+                if (encryptedFile != null && IOFile.Exists(encryptedFile))
+                {
+                    var ext = Path.GetExtension(encryptedFile);
+                    var tempPath = Path.Combine(Path.GetTempPath(), $"ktp_{Guid.NewGuid()}{ext}");
+
+                    await _aesHelper.DecryptFileAsync(encryptedFile, tempPath);
+                    var fileBytes = await IOFile.ReadAllBytesAsync(tempPath);
+
+                    var contentType = ext.ToLower() switch
+                    {
+                        ".jpg" or ".jpeg" => "image/jpeg",
+                        ".png" => "image/png",
+                        ".gif" => "image/gif",
+                        _ => "image/jpeg"
+                    };
+
+                    ktpBase64 = $"data:{contentType};base64,{Convert.ToBase64String(fileBytes)}";
+                    IOFile.Delete(tempPath);
+                }
+            }
+            catch { }
+
+            // 🔄 Gabungkan DTO dengan ktpImage di root
+            var result = talentDto.GetType()
+                .GetProperties()
+                .ToDictionary(prop => prop.Name, prop => prop.GetValue(talentDto, null));
+
+            result["ktpImage"] = ktpBase64;
+
+            return Ok(result);
         }
+
 
 
         [HttpPost("verify")]

@@ -8,6 +8,8 @@ using System.Security.Claims;
 using vocafind_api.DTO;
 using vocafind_api.Models;
 using vocafind_api.Services;
+using IOFile = System.IO.File; // ✅ Alias untuk System.IO.File
+
 using static vocafind_api.DTO.TalentsDTO;
 
 namespace vocafind_api.Controllers
@@ -22,6 +24,7 @@ namespace vocafind_api.Controllers
         private readonly IEmailService _emailService;
         private readonly ILogger<AuthController> _logger;
         private readonly JwtService _jwtService;
+        private readonly AesEncryptionHelper _aesHelper;
 
         public AuthController(
             TalentcerdasContext context,
@@ -29,7 +32,8 @@ namespace vocafind_api.Controllers
             IMapper mapper,
             IEmailService emailService,
             ILogger<AuthController> logger,
-            JwtService jwtService)
+            JwtService jwtService,
+            AesEncryptionHelper aesHelper)
         {
             _context = context;
             _env = env;
@@ -37,6 +41,7 @@ namespace vocafind_api.Controllers
             _emailService = emailService;
             _logger = logger;
             _jwtService = jwtService;
+            _aesHelper = aesHelper;
         }
 
 
@@ -194,7 +199,7 @@ namespace vocafind_api.Controllers
 
 
 
-        [HttpPost("registerTalent")]
+        /*[HttpPost("registerTalent")]
         public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -294,9 +299,120 @@ namespace vocafind_api.Controllers
                     inner = ex.InnerException?.Message
                 });
             }
+        }*/
+
+        [HttpPost("registerTalent")]
+        public async Task<IActionResult> Register([FromForm] TalentsRegisterDTO dto)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // ✅ Validasi Password Level 2
+                if (string.IsNullOrEmpty(dto.Password) ||
+                    dto.Password.Length < 8 ||
+                    !dto.Password.Any(char.IsUpper) ||
+                    !dto.Password.Any(char.IsLower) ||
+                    !dto.Password.Any(char.IsDigit) ||
+                    !dto.Password.Any(ch => !char.IsLetterOrDigit(ch)))
+                {
+                    return BadRequest(new
+                    {
+                        error = "Password harus minimal 8 karakter dan mengandung huruf besar, huruf kecil, angka, serta simbol."
+                    });
+                }
+
+                var talentId = Guid.NewGuid().ToString();
+                string hashed = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+                // Force prefix $2y$ (Laravel standard)
+                if (hashed.StartsWith("$2a$"))
+                {
+                    hashed = "$2y$" + hashed.Substring(4);
+                }
+
+                // 🔐 Enkripsi NIK sebelum disimpan (pakai instance _aesHelper)
+                string encryptedNik = _aesHelper.Encrypt(dto.Nik);
+
+                var talent = new Talent
+                {
+                    TalentId = talentId,
+                    Nama = dto.Nama,
+                    Usia = dto.Usia,
+                    JenisKelamin = dto.JenisKelamin,
+                    Email = dto.Email,
+                    NomorTelepon = dto.NomorTelepon,
+                    Nik = encryptedNik, // ✅ Simpan NIK yang sudah dienkripsi
+                    Provinsi = Request.Form["provinsi"],
+                    KabupatenKota = Request.Form["kabupaten_kota"],
+                    ProvinsiId = null,
+                    KabupatenKotaId = null,
+                    StatusVerifikasi = "0",
+                    StatusAkun = "Belum Terverifikasi",
+                    Password = hashed,
+                    FotoProfil = "",
+                    VerificationToken = "",
+                    Alamat = "",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+
+                _context.Talents.Add(talent);
+                await _context.SaveChangesAsync();
+
+                // 🔐 Simpan dan enkripsi file KTP
+                if (dto.Ktp != null && dto.Ktp.Length > 0)
+                {
+                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ktp");
+                    if (!Directory.Exists(uploadPath))
+                        Directory.CreateDirectory(uploadPath);
+
+                    var ext = Path.GetExtension(dto.Ktp.FileName);
+                    if (string.IsNullOrEmpty(ext)) ext = ".jpg";
+
+                    var fileName = $"{talentId}{ext}";
+                    var tempFilePath = Path.Combine(uploadPath, $"temp_{fileName}");
+                    var encryptedFilePath = Path.Combine(uploadPath, fileName);
+
+                    // Simpan file sementara
+                    using (var stream = new FileStream(tempFilePath, FileMode.Create))
+                    {
+                        await dto.Ktp.CopyToAsync(stream);
+                    }
+
+                    // 🔐 Enkripsi file KTP (pakai instance _aesHelper)
+                    await _aesHelper.EncryptFileAsync(tempFilePath, encryptedFilePath);
+
+                    // Hapus file sementara
+                    if (IOFile.Exists(tempFilePath))
+                        IOFile.Delete(tempFilePath);
+                }
+
+                await transaction.CommitAsync();
+
+                return Ok(new
+                {
+                    message = "Registrasi berhasil. Silakan tunggu verifikasi admin.",
+                    talentId = talent.TalentId,
+                    data = new
+                    {
+                        talent.Nama,
+                        talent.Provinsi,
+                        talent.KabupatenKota,
+                        talent.JenisKelamin,
+                        talent.Usia
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return BadRequest(new
+                {
+                    error = ex.Message,
+                    inner = ex.InnerException?.Message
+                });
+            }
         }
-
-
 
 
 

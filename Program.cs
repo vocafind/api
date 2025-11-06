@@ -91,6 +91,10 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+
+// Tambahkan ini di Program.cs
+builder.Services.AddScoped<AesEncryptionHelper>();
+
 //JWT
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtService>();

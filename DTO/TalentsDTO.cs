@@ -19,14 +19,14 @@ namespace vocafind_api.DTO
         //-------------------------------------------------------DATA TALENT UNVERIFIED----------------------------
         public class TalentsUnverifiedDTO
         {
-            public string TalentId { get; set; }
-            public string Nama { get; set; }
-            public string Email { get; set; }
-            public string NomorTelepon { get; set; }
-            public string? Nik { get; set; }
-            public int Usia { get; set; }
-            public string StatusVerifikasi { get; set; }
-            public string StatusAkun { get; set; }
+            public string talentId { get; set; }
+            public string nama { get; set; }
+            public string email { get; set; }
+            public string nomorTelepon { get; set; }
+            public string? nik { get; set; }
+            public int usia { get; set; }
+            public string statusVerifikasi { get; set; }
+            public string statusAkun { get; set; }
 
         }
 
