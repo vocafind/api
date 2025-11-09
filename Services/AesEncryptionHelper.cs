@@ -4,7 +4,7 @@ using System.Text;
 
 public class AesEncryptionHelper
 {
-    private readonly string _encryptionKey;
+    private readonly string _encryptionKey;  // 32 karakter = 256-bit
 
     public AesEncryptionHelper(IConfiguration configuration)
     {
@@ -27,13 +27,13 @@ public class AesEncryptionHelper
         using (Aes aes = Aes.Create())
         {
             aes.Key = key;
-            aes.GenerateIV();
+            aes.GenerateIV(); // Generate IV unik
 
             ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
 
             using (MemoryStream msEncrypt = new MemoryStream())
             {
-                // Simpan IV di awal stream
+                // Simpan IV di awal 
                 msEncrypt.Write(aes.IV, 0, aes.IV.Length);
 
                 using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))

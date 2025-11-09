@@ -122,9 +122,16 @@ public partial class TalentcerdasContext : DbContext
 
     public virtual DbSet<WorkHistory> WorkHistories { get; set; }
 
-   /* protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseMySql("server=localhost;port=3306;database=talentcerdas;user=root", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.30-mysql"));*/
+    // ✅ TAMBAHKAN INI
+    public DbSet<LoginAttempt> LoginAttempts { get; set; }
+    public DbSet<BlockedIp> BlockedIps { get; set; }
+
+
+
+
+    /* protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+ #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+         => optionsBuilder.UseMySql("server=localhost;port=3306;database=talentcerdas;user=root", Microsoft.EntityFrameworkCore.ServerVersion.Parse("8.0.30-mysql"));*/
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -2002,6 +2009,31 @@ public partial class TalentcerdasContext : DbContext
         });
 
         OnModelCreatingPartial(modelBuilder);
+
+
+        // ✅ TAMBAHKAN INI
+        modelBuilder.Entity<LoginAttempt>(entity =>
+        {
+            entity.ToTable("login_attempts");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(255);
+            entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(45);
+            entity.Property(e => e.AttemptTime).HasColumnName("attempt_time");
+            entity.Property(e => e.IsSuccess).HasColumnName("is_success");
+            entity.Property(e => e.UserAgent).HasColumnName("user_agent").HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<BlockedIp>(entity =>
+        {
+            entity.ToTable("blocked_ips");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.IpAddress).HasColumnName("ip_address").HasMaxLength(45);
+            entity.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(255);
+            entity.Property(e => e.BlockedAt).HasColumnName("blocked_at");
+            entity.Property(e => e.BlockedUntil).HasColumnName("blocked_until");
+        });
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

@@ -51,18 +51,38 @@ namespace vocafind_api.Controllers
 
 
         //---------------------------------------------------VERIFIKASI TALENT----------------------------------------------------
-
         [HttpGet("unverified")]
         public async Task<ActionResult<IEnumerable<TalentsUnverifiedDTO>>> GetUnverified()
         {
-            var result = await _context.Talents
+            var talents = await _context.Talents
                 .Where(t => t.StatusVerifikasi != "guest" && t.StatusAkun == "Belum Terverifikasi")
                 .OrderBy(t => t.UpdatedAt)
-                .ProjectTo<TalentsUnverifiedDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
+
+            // 🔄 Mapping manual agar bisa dekripsi NIK
+            var result = talents.Select(t =>
+            {
+                // Dekripsi NIK
+                string decryptedNik = null;
+                try
+                {
+                    decryptedNik = _aesHelper.Decrypt(t.Nik);
+                }
+                catch
+                {
+                    decryptedNik = "[INVALID DATA]";
+                }
+
+                // Mapping ke DTO
+                var dto = _mapper.Map<TalentsUnverifiedDTO>(t);
+                dto.nik = decryptedNik; // override hasil mapping
+
+                return dto;
+            }).ToList();
 
             return Ok(result);
         }
+
 
 
         [HttpGet("unverified/{id}")]
@@ -126,7 +146,7 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> VerifyTalent([FromBody] TalentsVerifyDTO dto)
         {
             var talent = await _context.Talents
-                .FirstOrDefaultAsync(t => t.TalentId == dto.TalentID);   // dto juga string
+                .FirstOrDefaultAsync(t => t.TalentId == dto.TalentID);
             if (talent == null)
                 return NotFound(new { message = "Talent tidak ditemukan" });
 
@@ -141,17 +161,19 @@ namespace vocafind_api.Controllers
                 TalentID = talent.TalentId
             };
 
-            // Hapus file KTP kalau status Sudah/Tidak Terverifikasi
+            // 🔥 Hapus file KTP jika sudah / tidak terverifikasi
             if (dto.StatusAkun == "Sudah Terverifikasi" || dto.StatusAkun == "Tidak Terverifikasi")
             {
+                var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "ktp");
                 var ktpExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+
                 foreach (var ext in ktpExtensions)
                 {
-                    var filePath = Path.Combine("wwwroot/ktp", $"{talent.TalentId}{ext}");
+                    var filePath = Path.Combine(uploadPath, $"{talent.TalentId}{ext}");
                     if (System.IO.File.Exists(filePath))
                     {
                         System.IO.File.Delete(filePath);
-                        _logger.LogInformation($"File KTP dihapus: {filePath}");
+                        _logger.LogInformation($"✅ File KTP dihapus: {filePath}");
                     }
                 }
             }
@@ -166,15 +188,14 @@ namespace vocafind_api.Controllers
 
                 await _emailService.SendEmailAsync(talentData.Email, subject, body);
 
-
                 _logger.LogInformation($"Talent {talentData.Email} diverifikasi oleh admin.");
-                return Ok(new { message = "Akun talent berhasil diverifikasi." });
+                return Ok(new { message = "Akun talent berhasil diverifikasi dan file KTP dihapus." });
             }
             else if (dto.StatusAkun == "Tidak Terverifikasi")
             {
                 _logger.LogInformation($"Menghapus akun talent ditolak: {talentData.Email} (ID: {talentData.TalentID})");
 
-                // Hapus QR Codes dari registrasi acara (kalau ada)
+                // 🔄 Hapus QR Code dari registrasi acara
                 var registrations = _context.TalentAcaraRegistrations
                     .Where(r => r.TalentId == talent.TalentId)
                     .ToList();
@@ -188,7 +209,7 @@ namespace vocafind_api.Controllers
                     }
                 }
 
-                // Hapus akun talent
+                // 🚮 Hapus akun talent
                 _context.Talents.Remove(talent);
                 await _context.SaveChangesAsync();
 
@@ -197,18 +218,17 @@ namespace vocafind_api.Controllers
 
                 await _emailService.SendEmailAsync(talentData.Email, subject, body);
 
-                return Ok(new { message = "Akun talent ditolak, dihapus, dan email notifikasi dikirim." });
+                return Ok(new { message = "Akun talent ditolak, dihapus, dan file KTP dihapus." });
             }
             else
             {
-                // Balik ke Belum Terverifikasi
+                // Kembalikan ke status "Belum Terverifikasi"
                 talent.StatusAkun = dto.StatusAkun;
                 await _context.SaveChangesAsync();
 
                 return Ok(new { message = $"Status akun talent diubah menjadi: {dto.StatusAkun}" });
             }
         }
-
 
 
 

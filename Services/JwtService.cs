@@ -16,7 +16,7 @@ namespace vocafind_api.Services
             _config = config;
         }
 
-        // Generate Access Token (expired pendek - 15 menit)
+        // ========================= TALENT =========================
         public string GenerateAccessToken(Talent talent)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -24,18 +24,18 @@ namespace vocafind_api.Services
 
             var claims = new[]
             {
-                new Claim("TalentId", talent.TalentId),                                 //Id Talent
-                new Claim(ClaimTypes.Email, talent.Email),                              //Email
-                new Claim(ClaimTypes.Name, talent.Nama),                                //Nama 
-                new Claim(ClaimTypes.Role, "Talent"),                                   //Role untuk otorisasi
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())       //Token 
+                new Claim("TalentId", talent.TalentId),
+                new Claim(ClaimTypes.Email, talent.Email),
+                new Claim(ClaimTypes.Name, talent.Nama),
+                new Claim(ClaimTypes.Role, "Talent"),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(15),                               //Expired 15 Menit
-                SigningCredentials = new SigningCredentials(                            //Algoritma enkripsi
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature
                 )
@@ -46,12 +46,67 @@ namespace vocafind_api.Services
         }
 
 
-        // Generate Refresh Token (random string)
+        // ========================= ADMIN =========================
+        public string GenerateAccessTokenAdmin(Admin admin)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_config["Jwt:Secret"]);
 
-        // Random 64-byte cryptographic token
-        // Base64 encoded
-        // Disimpan di database untuk validasi
-        // Expiry 7 hari
+            var claims = new[]
+            {
+                new Claim("AdminId", admin.AdminId.ToString()),
+                new Claim(ClaimTypes.Name, admin.Username),
+                //new Claim(ClaimTypes.Role, admin.HakAkses), // Disnaker, Perusahaan, Vokasi
+                new Claim(ClaimTypes.Role, "Admin"), // Disnaker, Perusahaan, Vokasi
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+                
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature
+                )
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+
+        // ========================= ADMIN SECURITY =========================
+        public string GenerateAccessTokenSecurity(AdminSecurity adminSecurity)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(_config["Jwt:Secret"]);
+
+            var claims = new[]
+            {
+                new Claim("AdminSecurityId", adminSecurity.AdminSecurityId.ToString()),
+                new Claim("NIM", adminSecurity.Nim),
+                new Claim(ClaimTypes.Name, adminSecurity.NamaLengkap ?? adminSecurity.Nim),
+                new Claim(ClaimTypes.Role, "Security"),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(15),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(key),
+                    SecurityAlgorithms.HmacSha256Signature
+                )
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+
+        // ========================= REFRESH TOKEN =========================
         public string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
@@ -60,9 +115,7 @@ namespace vocafind_api.Services
             return Convert.ToBase64String(randomNumber);
         }
 
-
-
-        // ✅ Validate Token (opsional - untuk validasi manual)
+        // ========================= VALIDASI TOKEN =========================
         public ClaimsPrincipal? ValidateToken(string token)
         {
             try
@@ -76,7 +129,7 @@ namespace vocafind_api.Services
                     IssuerSigningKey = new SymmetricSecurityKey(key),
                     ValidateIssuer = false,
                     ValidateAudience = false,
-                    ValidateLifetime = false, // Jangan validasi expiry untuk refresh
+                    ValidateLifetime = false, // Tidak cek expiry (buat refresh)
                     ClockSkew = TimeSpan.Zero
                 };
 
@@ -88,10 +141,7 @@ namespace vocafind_api.Services
             }
         }
 
-        // ✅ Method lama tetap ada untuk backward compatibility
-        public string GenerateToken(Talent talent)
-        {
-            return GenerateAccessToken(talent);
-        }
+        // Backward compatibility
+        public string GenerateToken(Talent talent) => GenerateAccessToken(talent);
     }
 }

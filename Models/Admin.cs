@@ -16,6 +16,8 @@ public partial class Admin
     public DateTime? CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
 
     public virtual ICollection<AdminCompany> AdminCompanies { get; set; } = new List<AdminCompany>();
 

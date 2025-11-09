@@ -25,6 +25,9 @@ public partial class AdminSecurity
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string? RefreshToken { get; set; }
+    public DateTime? RefreshTokenExpiryTime { get; set; }
+
     public virtual AcaraJobfair? AcaraJobfair { get; set; }
 
     public virtual AdminVokasi AdminVokasi { get; set; } = null!;
