@@ -69,13 +69,13 @@ namespace vocafind_api.Mapping
 
 
 
-            /*---------------------------------------TALENT PROFIL / DATA DIRI-----------------------------------*/
+            //---------------------------------------TALENT PROFIL---------------------------------------TALENT PROFIL---------------------------------------TALENT PROFIL 
+
+            // DATA DIRI-----------------------------------
             CreateMap<Talent, TalentsGetDataDiriDTO>();
 
 
-
-
-            /*---------------------------------------SOCIAL MEDIA-----------------------------------*/
+            /*---------------------------------------SOSMED-----------------------------------*/
             CreateMap<Social, SocialGetDTO>();      // GET
             CreateMap<SocialPostDTO, Social>();     // POST
             CreateMap<SocialPutDTO, Social>();      // PUT
@@ -87,7 +87,7 @@ namespace vocafind_api.Mapping
             CreateMap<CareerInterestPutDTO, CareerInterest>();      // PUT
 
 
-            /*---------------------------------------TALENT REFERENCE-----------------------------------*/
+            /*---------------------------------------REFERENSI-----------------------------------*/
             CreateMap<TalentReference, TalentReferenceGetDTO>();   // GET
             CreateMap<TalentReferencePostDTO, TalentReference>();  // POST
             CreateMap<TalentReferencePutDTO, TalentReference>();   // PUT
@@ -95,19 +95,22 @@ namespace vocafind_api.Mapping
 
 
 
-            /*---------------------------------------Education-----------------------------------*/
+
+            //---------------------------------------AKADEMIK---------------------------------------AKADEMIK---------------------------------------AKADEMIK---------------------------------------AKADEMIK---------------------------------------AKADEMIK
+
+            /*---------------------------------------Pendidikan-----------------------------------*/
             CreateMap<Education, EducationGetDTO>();   // GET
             CreateMap<EducationPostDTO, Education>();  // POST
             CreateMap<EducationPutDTO, Education>();   // PUT
 
 
-            /*---------------------------------------Language-----------------------------------*/
+            /*---------------------------------------Bahasa-----------------------------------*/
             CreateMap<Language, LanguageGetDTO>();   // GET
             CreateMap<LanguagePostDTO, Language>();  // POST
             CreateMap<LanguagePutDTO, Language>();   // PUT
 
 
-            /*---------------------------------------Award-----------------------------------*/
+            /*---------------------------------------Penghargaan-----------------------------------*/
             CreateMap<Award, AwardGetDTO>();   // GET
             CreateMap<AwardPostDTO, Award>();  // POST
             CreateMap<AwardPutDTO, Award>();   // PUT
@@ -115,29 +118,49 @@ namespace vocafind_api.Mapping
 
 
 
-
-            /*---------------------------------------Certification-----------------------------------*/
+            //---------------------------------------KOMPETENSI---------------------------------------KOMPETENSI---------------------------------------KOMPETENSI---------------------------------------KOMPETENSI---------------------------------------KOMPETENSI
+            
+            /*---------------------------------------Sertifikasi-----------------------------------*/
             CreateMap<Certification, CertificationGetDTO>();   // GET
             CreateMap<CertificationPostDTO, Certification>();  // POST
             CreateMap<CertificationPutDTO, Certification>();   // PUT
 
 
-            /*---------------------------------------Training-----------------------------------*/
+            /*---------------------------------------Pelatihan-----------------------------------*/
             CreateMap<Training, TrainingGetDTO>();   // GET
             CreateMap<TrainingPostDTO, Training>();  // POST
             CreateMap<TrainingPutDTO, Training>();   // PUT
 
 
-            /*---------------------------------------SoftSkill-----------------------------------*/
+            /*---------------------------------------Soft skill-----------------------------------*/
             CreateMap<SoftSkill, SoftSkillGetDTO>();   // GET
             CreateMap<SoftSkillPostDTO, SoftSkill>();  // POST
             CreateMap<SoftSkillPutDTO, SoftSkill>();   // PUT
 
 
-            /*---------------------------------------WorkHistory-----------------------------------*/
+
+            //---------------------------------------PENGALAMAN---------------------------------------PENGALAMAN---------------------------------------PENGALAMAN---------------------------------------PENGALAMAN---------------------------------------PENGALAMAN
+
+            /*---------------------------------------Riwayat kerja-----------------------------------*/
             CreateMap<WorkHistory, WorkHistoryGetDTO>();   // GET
             CreateMap<WorkHistoryPostDTO, WorkHistory>();  // POST
             CreateMap<WorkHistoryPutDTO, WorkHistory>();   // PUT
+
+
+            /*---------------------------------------Proyek-----------------------------------*/
+            CreateMap<Project, ProjectGetDTO>();   // GET
+            CreateMap<ProjectPostDTO, Project>();  // POST
+            CreateMap<ProjectPutDTO, Project>();   // PUT
+
+
+            /*---------------------------------------Portofolio-----------------------------------*/
+            CreateMap<Portofolio, PortofolioGetDTO>();   // GET
+            CreateMap<PortofolioPostDTO, Portofolio>();  // POST
+            CreateMap<PortofolioPutDTO, Portofolio>();   // PUT
+
+
+
+
 
 
             /*---------------------------------------Talent-----------------------------------*/

@@ -1,7 +1,7 @@
 ﻿namespace vocafind_api.DTO
 {
     // ✅ Untuk CREATE (POST)
-    public class LanguagePostDTO
+    /*public class LanguagePostDTO
     {
         public string TalentId { get; set; } = null!;
 
@@ -40,6 +40,6 @@
         public string? Sertifikat { get; set; }
 
         public string? Skor { get; set; }
-    }
+    }*/
 
 }

@@ -1,4 +1,4 @@
-﻿namespace vocafind_api.DTO
+﻿/*namespace vocafind_api.DTO
 {
     // ✅ Untuk CREATE (POST)
     public class TrainingPostDTO
@@ -55,3 +55,4 @@
     }
 
 }
+*/
