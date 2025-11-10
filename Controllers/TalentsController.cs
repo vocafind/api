@@ -279,21 +279,46 @@ namespace vocafind_api.Controllers
         [HttpGet("profil/data_diri/{id}")]
         public async Task<IActionResult> GetById(string id)
         {
-            var dataDiri = await _context.Talents
+            var talent = await _context.Talents
                 .Where(t => t.TalentId == id)
-                .ProjectTo<TalentsGetDataDiriDTO>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
 
-            if (dataDiri == null)
+            if (talent == null)
                 return NotFound(new { message = "Talent tidak ditemukan" });
+
+            // 🔓 Dekripsi NIK jika ada
+            try
+            {
+                if (!string.IsNullOrEmpty(talent.Nik))
+                {
+                    talent.Nik = _aesHelper.Decrypt(talent.Nik);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gagal mendekripsi NIK untuk Talent {TalentId}", id);
+                // Supaya tetap bisa lanjut, kirimkan pesan error aman
+                talent.Nik = "[Gagal dekripsi]";
+            }
+
+            // 🧩 Map ke DTO (gunakan AutoMapper)
+            var dataDiri = _mapper.Map<TalentsGetDataDiriDTO>(talent);
 
             return Ok(dataDiri);
         }
 
 
+
+        [Authorize(Roles = "Talent")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchTalent(string id, [FromForm] TalentsUpdateDTO updateDto)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null || tokenTalentId != id)
+                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+
+
             var talent = await _context.Talents.FindAsync(id);
             if (talent == null)
                 return NotFound();

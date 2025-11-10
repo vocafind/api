@@ -122,7 +122,7 @@ namespace vocafind_api.Controllers
             }
 
             // 2️⃣ HITUNG FAILED ATTEMPTS (5 menit terakhir)
-            var fiveMinutesAgo = DateTime.Now.AddMinutes(15);
+            var fiveMinutesAgo = DateTime.Now.AddMinutes(-5);
             var recentFailedAttempts = await _context.LoginAttempts
                 .Where(la =>
                     la.IpAddress == ipAddress &&
