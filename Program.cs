@@ -7,6 +7,7 @@ using System.Text;
 using vocafind_api.Mapping;
 using vocafind_api.Models;
 using vocafind_api.Services;
+using YourNamespace.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,6 +100,9 @@ builder.Services.AddScoped<AesEncryptionHelper>();
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<JwtService>();
 
+//Backup
+//builder.Services.AddScoped<BackupService>();
+builder.Services.AddScoped<IBackupService, BackupService>();
 
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

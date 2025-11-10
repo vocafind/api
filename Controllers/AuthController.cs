@@ -99,10 +99,11 @@ namespace vocafind_api.Controllers
         [HttpPost("loginTalent")]
         public async Task<IActionResult> Login([FromForm] TalentsLoginDTO dto)
         {
+            // Ambil informasi request
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
             var userAgent = Request.Headers["User-Agent"].ToString();
 
-            // 1️⃣ CEK IP TERBLOKIR
+            // 1️ CEK IP TERBLOKIR
             var blocked = await _context.BlockedIps
                 .AsNoTracking()
                 .FirstOrDefaultAsync(b =>

@@ -24,18 +24,18 @@ namespace vocafind_api.Services
 
             var claims = new[]
             {
-                new Claim("TalentId", talent.TalentId),
-                new Claim(ClaimTypes.Email, talent.Email),
-                new Claim(ClaimTypes.Name, talent.Nama),
-                new Claim(ClaimTypes.Role, "Talent"),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim("TalentId", talent.TalentId),                             //Id talent
+                new Claim(ClaimTypes.Email, talent.Email),                          //Email 
+                new Claim(ClaimTypes.Name, talent.Nama),                            //Nama
+                new Claim(ClaimTypes.Role, "Talent"),                               //Role
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())   //Token
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddMinutes(15),
-                SigningCredentials = new SigningCredentials(
+                Expires = DateTime.UtcNow.AddSeconds(20),                           // Expired 15 menit
+                SigningCredentials = new SigningCredentials(                        //Algoritma enkripsi
                     new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature
                 )
