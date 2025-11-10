@@ -365,7 +365,7 @@ namespace vocafind_api.Controllers
         }
 
 
-
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
@@ -402,9 +402,15 @@ namespace vocafind_api.Controllers
 
 
         // ✅ POST: Tambah akun sosial media
+        [Authorize(Roles = "Talent")]
         [HttpPost("profil/media_sosial/")]
         public async Task<IActionResult> Create([FromBody] SocialPostDTO dto)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
+
             var social = _mapper.Map<Social>(dto);
             social.SocialId = Guid.NewGuid().ToString();
             social.CreatedAt = DateTime.Now;
@@ -417,11 +423,16 @@ namespace vocafind_api.Controllers
         }
 
 
-
         // 🛠 PATCH: Update akun sosial
+        [Authorize(Roles = "Talent")]
         [HttpPut("profil/media_sosial/{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] SocialPutDTO dto)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null || tokenTalentId != id)
+                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+
             var social = await _context.Socials.FindAsync(id);
             if (social == null) return NotFound();
 
@@ -434,11 +445,16 @@ namespace vocafind_api.Controllers
         }
 
 
-
         // ❌ DELETE: Hapus akun sosial
+        [Authorize(Roles = "Talent")]
         [HttpDelete("profil/media_sosial/{id}")]
         public async Task<IActionResult> DeleteSocial(string id)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null || tokenTalentId != id)
+                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+
             var social = await _context.Socials.FindAsync(id);
             if (social == null) return NotFound();
 
@@ -461,6 +477,7 @@ namespace vocafind_api.Controllers
         [HttpGet("profil/minat_karir/{talentId}")]
         public async Task<IActionResult> GetMinatByTalent(string talentId)
         {
+
             var careerInterests = await _context.CareerInterests
                 .Where(s => s.TalentId == talentId)
                 .Select(s => new CareerInterestGetDTO
@@ -478,9 +495,15 @@ namespace vocafind_api.Controllers
 
 
         // ✅ POST: Tambah minat karir
+        [Authorize(Roles = "Talent")]
         [HttpPost("profil/minat_karir/")]
         public async Task<IActionResult> Create([FromBody] CareerInterestPostDTO dto)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
+
             var careerInterest = new CareerInterest
             {
                 CareerinterestId = Guid.NewGuid().ToString(),
@@ -500,9 +523,15 @@ namespace vocafind_api.Controllers
 
 
         // 🛠 PATCH: Update minat karir
+        [Authorize(Roles = "Talent")]
         [HttpPut("profil/minat_karir/{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] CareerInterestPutDTO dto)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null || tokenTalentId != id)
+                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+
             var careerInterest = await _context.CareerInterests.FindAsync(id);
             if (careerInterest == null) return NotFound();
 
@@ -519,9 +548,16 @@ namespace vocafind_api.Controllers
 
 
         // ❌ DELETE: Hapus Minat karir
+        [Authorize(Roles = "Talent")]
         [HttpDelete("profil/minat_karir/{id}")]
         public async Task<IActionResult> DeleteMinat(string id)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null || tokenTalentId != id)
+                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+
+
             var careerInterest = await _context.CareerInterests.FindAsync(id);
             if (careerInterest == null) return NotFound();
 
@@ -553,10 +589,17 @@ namespace vocafind_api.Controllers
             return Ok(references);
         }
 
+
         // ✅ POST: Tambah reference
+        [Authorize(Roles = "Talent")]
         [HttpPost("profil/referensi/")]
         public async Task<IActionResult> Create([FromBody] TalentReferencePostDTO dto)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
+
             var reference = _mapper.Map<TalentReference>(dto);
             reference.ReferenceId = Guid.NewGuid().ToString();
             reference.CreatedAt = DateTime.Now;
@@ -568,10 +611,17 @@ namespace vocafind_api.Controllers
             return Ok(new { message = "Referensi berhasil ditambahkan" });
         }
 
+
         // 🛠 PUT: Update full reference
+        [Authorize(Roles = "Talent")]
         [HttpPut("profil/referensi/{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] TalentReferencePutDTO dto)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null || tokenTalentId != id)
+                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+
             var reference = await _context.TalentReferences.FindAsync(id);
             if (reference == null) return NotFound();
 
@@ -583,10 +633,17 @@ namespace vocafind_api.Controllers
             return Ok(new { message = "Referensi berhasil diperbarui" });
         }
 
+
         // ❌ DELETE: Hapus referensi
+        [Authorize(Roles = "Talent")]
         [HttpDelete("profil/referensi/{id}")]
         public async Task<IActionResult> DeleteReferensi(string id)
         {
+            var tokenTalentId = User.FindFirst("TalentId")?.Value;
+
+            if (tokenTalentId == null || tokenTalentId != id)
+                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+
             var reference = await _context.TalentReferences.FindAsync(id);
             if (reference == null) return NotFound();
 
