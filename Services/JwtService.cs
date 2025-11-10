@@ -34,7 +34,7 @@ namespace vocafind_api.Services
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddSeconds(20),                           // Expired 15 menit
+                Expires = DateTime.UtcNow.AddMinutes(15),                           // Expired 15 menit
                 SigningCredentials = new SigningCredentials(                        //Algoritma enkripsi
                     new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature
