@@ -991,7 +991,6 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Create([FromBody] CertificationPostDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
             if (tokenTalentId == null)
                 return Unauthorized(new { message = "Token tidak valid." });
 
@@ -999,6 +998,10 @@ namespace vocafind_api.Controllers
             certification.CertificationId = Guid.NewGuid().ToString();
             certification.CreatedAt = DateTime.Now;
             certification.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (certification.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Certifications.Add(certification);
             await _context.SaveChangesAsync();
@@ -1009,19 +1012,22 @@ namespace vocafind_api.Controllers
 
         // 🛠 PATCH: Update sertifikasi
         [Authorize(Roles = "Talent")]
-        [HttpPut("profil/sertifikasi{id}")]
+        [HttpPut("profil/sertifikasi/{id}")]
         public async Task<IActionResult> Update(string id, [FromBody] CertificationPutDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var certification = await _context.Certifications.FindAsync(id);
             if (certification == null) return NotFound();
 
             _mapper.Map(dto, certification);  // Langsung timpa seluruh field DTO ke model
             certification.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (certification.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             await _context.SaveChangesAsync();
 
@@ -1035,12 +1041,15 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> DeleteSertifikasi(string id)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var certification = await _context.Certifications.FindAsync(id);
             if (certification == null) return NotFound();
+
+            // ✅ Cek kepemilikan
+            if (certification.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Certifications.Remove(certification);
             await _context.SaveChangesAsync();
@@ -1074,7 +1083,6 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Create([FromBody] TrainingPostDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
             if (tokenTalentId == null)
                 return Unauthorized(new { message = "Token tidak valid." });
 
@@ -1082,6 +1090,10 @@ namespace vocafind_api.Controllers
             training.TrainingId = Guid.NewGuid().ToString();
             training.CreatedAt = DateTime.Now;
             training.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (training.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Trainings.Add(training);
             await _context.SaveChangesAsync();
@@ -1096,15 +1108,18 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Update(string id, [FromBody] TrainingPutDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var training = await _context.Trainings.FindAsync(id);
             if (training == null) return NotFound();
 
             _mapper.Map(dto, training);  // Langsung timpa seluruh field DTO ke model
             training.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (training.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             await _context.SaveChangesAsync();
 
@@ -1118,12 +1133,15 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> DeletePelatihan(string id)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var training = await _context.Trainings.FindAsync(id);
             if (training == null) return NotFound();
+
+            // ✅ Cek kepemilikan
+            if (training.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Trainings.Remove(training);
             await _context.SaveChangesAsync();
@@ -1159,7 +1177,6 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Create([FromBody] SoftSkillPostDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
             if (tokenTalentId == null)
                 return Unauthorized(new { message = "Token tidak valid." });
 
@@ -1167,6 +1184,10 @@ namespace vocafind_api.Controllers
             softskill.SoftskillsId = Guid.NewGuid().ToString();
             softskill.CreatedAt = DateTime.Now;
             softskill.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (softskill.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.SoftSkills.Add(softskill);
             await _context.SaveChangesAsync();
@@ -1181,15 +1202,18 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Update(string id, [FromBody] SoftSkillPutDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var softskill = await _context.SoftSkills.FindAsync(id);
             if (softskill == null) return NotFound();
 
             _mapper.Map(dto, softskill);  // Langsung timpa seluruh field DTO ke model
             softskill.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (softskill.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             await _context.SaveChangesAsync();
 
@@ -1203,12 +1227,15 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> DeleteSoftSkill(string id)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var softskill = await _context.SoftSkills.FindAsync(id);
             if (softskill == null) return NotFound();
+
+            // ✅ Cek kepemilikan
+            if (softskill.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.SoftSkills.Remove(softskill);
             await _context.SaveChangesAsync();
@@ -1245,7 +1272,6 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Create([FromBody] WorkHistoryPostDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
             if (tokenTalentId == null)
                 return Unauthorized(new { message = "Token tidak valid." });
 
@@ -1253,6 +1279,10 @@ namespace vocafind_api.Controllers
             workhistory.WorkhistoryId = Guid.NewGuid().ToString();
             workhistory.CreatedAt = DateTime.Now;
             workhistory.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (workhistory.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.WorkHistories.Add(workhistory);
             await _context.SaveChangesAsync();
@@ -1267,15 +1297,18 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Update(string id, [FromBody] WorkHistoryPutDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var workhistory = await _context.WorkHistories.FindAsync(id);
             if (workhistory == null) return NotFound();
 
             _mapper.Map(dto, workhistory);  // Langsung timpa seluruh field DTO ke model
             workhistory.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (workhistory.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             await _context.SaveChangesAsync();
 
@@ -1289,18 +1322,24 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> DeleteRiwayatPekerjaan(string id)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var workhistory = await _context.WorkHistories.FindAsync(id);
             if (workhistory == null) return NotFound();
+
+            // ✅ Cek kepemilikan
+            if (workhistory.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.WorkHistories.Remove(workhistory);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Riwayat kerja berhasil dihapus" });
         }
+
+
+
 
 
 
@@ -1326,7 +1365,6 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> CreateProyek([FromBody] ProjectPostDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
             if (tokenTalentId == null)
                 return Unauthorized(new { message = "Token tidak valid." });
 
@@ -1334,6 +1372,10 @@ namespace vocafind_api.Controllers
             proyek.ProjectId = Guid.NewGuid().ToString();
             proyek.CreatedAt = DateTime.Now;
             proyek.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (proyek.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Projects.Add(proyek);
             await _context.SaveChangesAsync();
@@ -1348,15 +1390,19 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Update(string id, [FromBody] ProjectPutDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var proyek = await _context.Projects.FindAsync(id);
             if (proyek == null) return NotFound();
 
             _mapper.Map(dto, proyek);  // Langsung timpa seluruh field DTO ke model
             proyek.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (proyek.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
+
 
             await _context.SaveChangesAsync();
 
@@ -1370,18 +1416,26 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> DeleteProyek(string id)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var proyek = await _context.Projects.FindAsync(id);
             if (proyek == null) return NotFound();
+
+            // ✅ Cek kepemilikan
+            if (proyek.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
+
 
             _context.Projects.Remove(proyek);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Proyek berhasil dihapus" });
         }
+
+
+
+
 
 
 
@@ -1407,7 +1461,6 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> CreatePortofolio([FromBody] PortofolioPostDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
             if (tokenTalentId == null)
                 return Unauthorized(new { message = "Token tidak valid." });
 
@@ -1415,6 +1468,10 @@ namespace vocafind_api.Controllers
             portofolio.PortfolioId = Guid.NewGuid().ToString();
             portofolio.CreatedAt = DateTime.Now;
             portofolio.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (portofolio.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Portofolios.Add(portofolio);
             await _context.SaveChangesAsync();
@@ -1429,15 +1486,18 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Update(string id, [FromBody] PortofolioPutDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var portofolio = await _context.Portofolios.FindAsync(id);
             if (portofolio == null) return NotFound();
 
             _mapper.Map(dto, portofolio);  // Langsung timpa seluruh field DTO ke model
             portofolio.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (portofolio.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             await _context.SaveChangesAsync();
 
@@ -1451,12 +1511,15 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> DeletePortofolio(string id)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var portofolio = await _context.Portofolios.FindAsync(id);
             if (portofolio == null) return NotFound();
+
+            // ✅ Cek kepemilikan
+            if (portofolio.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Portofolios.Remove(portofolio);
             await _context.SaveChangesAsync();
