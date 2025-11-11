@@ -897,7 +897,6 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Create([FromBody] AwardPostDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
             if (tokenTalentId == null)
                 return Unauthorized(new { message = "Token tidak valid." });
 
@@ -905,6 +904,10 @@ namespace vocafind_api.Controllers
             award.AwardId = Guid.NewGuid().ToString();
             award.CreatedAt = DateTime.Now;
             award.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (award.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Awards.Add(award);
             await _context.SaveChangesAsync();
@@ -919,15 +922,18 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> Update(string id, [FromBody] AwardPutDTO dto)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var award = await _context.Awards.FindAsync(id);
             if (award == null) return NotFound();
 
             _mapper.Map(dto, award);  // Langsung timpa seluruh field DTO ke model
             award.UpdatedAt = DateTime.Now;
+
+            // ✅ Cek kepemilikan
+            if (award.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             await _context.SaveChangesAsync();
 
@@ -941,12 +947,15 @@ namespace vocafind_api.Controllers
         public async Task<IActionResult> DeletePenghargaan(string id)
         {
             var tokenTalentId = User.FindFirst("TalentId")?.Value;
-
-            if (tokenTalentId == null || tokenTalentId != id)
-                return Forbid("Anda tidak diizinkan mengubah data talent lain.");
+            if (tokenTalentId == null)
+                return Unauthorized(new { message = "Token tidak valid." });
 
             var award = await _context.Awards.FindAsync(id);
             if (award == null) return NotFound();
+
+            // ✅ Cek kepemilikan
+            if (award.TalentId != tokenTalentId)
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = "Anda tidak diizinkan mengubah data talent lain." });
 
             _context.Awards.Remove(award);
             await _context.SaveChangesAsync();
