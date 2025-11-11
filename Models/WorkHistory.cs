@@ -13,9 +13,9 @@ public partial class WorkHistory
 
     public string Perusahaan { get; set; } = null!;
 
-    public string TanggalMulai { get; set; } = null!;
+    public DateOnly TanggalMulai { get; set; }
 
-    public string TanggalSelesai { get; set; } = null!;
+    public DateOnly TanggalSelesai { get; set; }
 
     public string Deskripsi { get; set; } = null!;
 
