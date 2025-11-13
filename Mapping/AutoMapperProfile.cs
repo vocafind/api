@@ -18,18 +18,51 @@ namespace vocafind_api.Mapping
 
             /*---------------------------------------Loker Umum -----------------------------------*/
             CreateMap<JobVacancy, LokerUmumDTO>()
-           .ForMember(dest => dest.CompanyName,
-                      opt => opt.MapFrom(src => src.Company.NamaPerusahaan));
+                .ForMember(dest => dest.NamaPerusahaan,
+                           opt => opt.MapFrom(src => src.Company.NamaPerusahaan))
+                .ForMember(dest => dest.Logo,
+                           opt => opt.MapFrom(src => src.Company.Logo)); // <-- tambahkan ini
 
-            /*CreateMap<JobVacancy, LokerUmumDetailDTO>()
-            .ForMember(dest => dest.CompanyName,
-                     opt => opt.MapFrom(src => src.Company.NamaPerusahaan));*/
+
 
 
             // Mapping utama
             CreateMap<JobVacancy, LokerUmumDetailDTO>()
-                .ForMember(dest => dest.CompanyName,
-                           opt => opt.MapFrom(src => src.Company.NamaPerusahaan))
+                // --- Mapping data perusahaan ---
+                .ForMember(dest => dest.NamaPerusahaan,
+                    opt => opt.MapFrom(src => src.Company.NamaPerusahaan))
+                .ForMember(dest => dest.Nib,
+                    opt => opt.MapFrom(src => src.Company.Nib))
+                .ForMember(dest => dest.Npwp,
+                    opt => opt.MapFrom(src => src.Company.Npwp))
+                .ForMember(dest => dest.BidangUsaha,
+                    opt => opt.MapFrom(src => src.Company.BidangUsaha))
+                .ForMember(dest => dest.Alamat,
+                    opt => opt.MapFrom(src => src.Company.Alamat))
+                .ForMember(dest => dest.Provinsi,
+                    opt => opt.MapFrom(src => src.Company.Provinsi))
+                .ForMember(dest => dest.Kota,
+                    opt => opt.MapFrom(src => src.Company.Kota))
+                .ForMember(dest => dest.Email,
+                    opt => opt.MapFrom(src => src.Company.Email))
+                .ForMember(dest => dest.NomorTelepon,
+                    opt => opt.MapFrom(src => src.Company.NomorTelepon))
+                .ForMember(dest => dest.Website,
+                    opt => opt.MapFrom(src => src.Company.Website))
+                .ForMember(dest => dest.Logo,
+                    opt => opt.MapFrom(src => src.Company.Logo))
+                .ForMember(dest => dest.DeskripsiPerusahaan,
+                    opt => opt.MapFrom(src => src.Company.DeskripsiPerusahaan))
+                .ForMember(dest => dest.JumlahKaryawan,
+                    opt => opt.MapFrom(src => src.Company.JumlahKaryawan))
+                .ForMember(dest => dest.KebijakanKerja,
+                    opt => opt.MapFrom(src => src.Company.KebijakanKerja))
+                .ForMember(dest => dest.BudayaPerusahaan,
+                    opt => opt.MapFrom(src => src.Company.BudayaPerusahaan))
+                .ForMember(dest => dest.JumlahProyekBerjalan,
+                    opt => opt.MapFrom(src => src.Company.JumlahProyekBerjalan))
+
+                //kualifikasi
                 .ForMember(dest => dest.JobQualifications,
                            opt => opt.MapFrom(src => src.JobQualifications))
                 .ForMember(dest => dest.JobBenefits,
@@ -38,6 +71,10 @@ namespace vocafind_api.Mapping
                            opt => opt.MapFrom(src => src.JobAdditionalRequirements))
                 .ForMember(dest => dest.JobAdditionalFacilities,
                            opt => opt.MapFrom(src => src.JobAdditionalFacilities));
+
+
+
+
 
             // Mapping tiap relasi ke DTO
             CreateMap<JobQualification, JobQualificationDTO>()
