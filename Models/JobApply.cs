@@ -25,6 +25,10 @@ public partial class JobApply
 
     public DateTime? ReviewedAt { get; set; }
 
+    public string? Interview { get; set; } 
+    public string? Location_interview { get; set; }
+
+
     public virtual ICollection<ApplyAcara> ApplyAcaras { get; set; } = new List<ApplyAcara>();
 
     public virtual AcaraInterviewSlot? InterviewSlotNavigation { get; set; }

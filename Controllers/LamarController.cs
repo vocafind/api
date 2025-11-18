@@ -141,7 +141,7 @@ namespace vocafind_api.Controllers
 
                 if (missing.Any())
                 {
-                    return BadRequest(new { message = $"Anda harus melengkapi data berikut sebelum melamar pekerjaan: {string.Join(", ", missing)}" });
+                    return BadRequest(new { message = $"Anda harus melengkapi data {string.Join(", ", missing)} sebelum melamar pekerjaan" });
                 }
 
                 // Check education level requirement
@@ -282,6 +282,10 @@ namespace vocafind_api.Controllers
                                          apply.ApplyId,
                                          apply.LowonganId,
                                          apply.Status,
+                                         apply.Interview,
+                                         apply.Location_interview,
+
+
                                          apply.CreatedAt,
                                          apply.AppliedAt,
                                          Lowongan = new
@@ -290,6 +294,7 @@ namespace vocafind_api.Controllers
                                              lowongan.DeskripsiPekerjaan,
                                              lowongan.Lokasi,
                                              lowongan.Gaji,
+                                             lowongan.OpsiKerjaRemote,
                                              Company = new
                                              {
                                                  company.NamaPerusahaan,
