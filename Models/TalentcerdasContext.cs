@@ -125,7 +125,7 @@ public partial class TalentcerdasContext : DbContext
     // ✅ TAMBAHKAN INI
     public DbSet<LoginAttempt> LoginAttempts { get; set; }
     public DbSet<BlockedIp> BlockedIps { get; set; }
-
+    public DbSet<SavedJob> SavedJob { get; set; }
 
 
 
@@ -2034,6 +2034,50 @@ public partial class TalentcerdasContext : DbContext
             entity.Property(e => e.BlockedAt).HasColumnName("blocked_at");
             entity.Property(e => e.BlockedUntil).HasColumnName("blocked_until");
         });
+
+
+        modelBuilder.Entity<SavedJob>(entity =>
+        {
+            entity.HasKey(e => e.saved_job_ID).HasName("PRIMARY");
+
+            entity
+                .ToTable("saved_job")
+                .UseCollation("utf8mb4_unicode_ci");
+
+            // Indexes untuk foreign keys
+            entity.HasIndex(e => e.TalentId, "saved_job_talentid_foreign");
+            entity.HasIndex(e => e.LowonganId, "saved_job_lowonganid_foreign");
+
+            // ✅ PERBAIKI MAPPING KOLOM - SESUAIKAN DENGAN DATABASE
+            entity.Property(e => e.saved_job_ID)
+                .HasColumnName("saved_job_ID"); // ← Gunakan saved_job_ID (bukan 'id')
+
+            entity.Property(e => e.TalentId)
+                .HasColumnName("talentID"); // ← talentID (bukan talent_id)
+
+            entity.Property(e => e.LowonganId)
+                .HasColumnName("lowonganID"); // ← lowonganID (bukan lowongan_id)
+
+            entity.Property(e => e.CreatedAt)
+                .HasColumnType("timestamp")
+                .HasColumnName("created_at");
+
+            entity.Property(e => e.UpdatedAt)
+                .HasColumnType("timestamp")
+                .HasColumnName("updated_at");
+
+            // Relationships
+            entity.HasOne(d => d.Talent)
+                .WithMany(p => p.SavedJobs)
+                .HasForeignKey(d => d.TalentId)
+                .HasConstraintName("saved_job_talentid_foreign");
+
+            entity.HasOne(d => d.Lowongan)
+                .WithMany(p => p.SavedJobs)
+                .HasForeignKey(d => d.LowonganId)
+                .HasConstraintName("saved_job_lowonganid_foreign");
+        });
+
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

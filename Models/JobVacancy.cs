@@ -54,4 +54,7 @@ public partial class JobVacancy
     public virtual ICollection<JobQualification> JobQualifications { get; set; } = new List<JobQualification>();
 
     public virtual ICollection<LowonganAcara> LowonganAcaras { get; set; } = new List<LowonganAcara>();
+
+    public virtual ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();
+
 }

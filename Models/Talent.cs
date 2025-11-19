@@ -97,4 +97,7 @@ public partial class Talent
 
     public virtual ICollection<AlumniVokasi> AlumniVokasis { get; set; } = new List<AlumniVokasi>();
 
+
+    public virtual ICollection<SavedJob> SavedJobs { get; set; } = new List<SavedJob>();
+
 }
