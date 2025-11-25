@@ -130,12 +130,19 @@ app.UseStaticFiles(new StaticFileOptions
 
 
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+// Hanya develop.
+/*if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+}*/
+
+//develop dan deploy
+app.UseSwagger();
+app.UseSwaggerUI();
+
+
+
 //jwt
 app.UseAuthentication();
 
