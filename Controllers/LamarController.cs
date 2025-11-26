@@ -260,7 +260,6 @@ namespace vocafind_api.Controllers
         }
 
         //---------------------------------------------------GET LAMARAN SAYA----------------------------------------------------
-
         [Authorize(Roles = "Talent")]
         [HttpGet("lamaran-saya")]
         public async Task<IActionResult> GetLamaranSaya()
@@ -271,11 +270,18 @@ namespace vocafind_api.Controllers
                 if (string.IsNullOrEmpty(talentId))
                     return Unauthorized(new { message = "Token tidak valid." });
 
-                // PERBAIKAN: Join manual karena tidak ada navigation property langsung
+                // AMBIL HANYA LAMARAN UMUM (BUKAN JOBFAIR)
                 var lamaran = await (from apply in _context.JobApplies
                                      join lowongan in _context.JobVacancies on apply.LowonganId equals lowongan.LowonganId
                                      join company in _context.Companies on lowongan.CompanyId equals company.CompanyId
+
+                                     // LEFT JOIN ke LowonganAcaras untuk cek apakah ini jobfair
+                                     join lowonganAcara in _context.LowonganAcaras
+                                         on apply.LowonganId equals lowonganAcara.LowonganId into laGroup
+                                     from lowonganAcara in laGroup.DefaultIfEmpty()
+
                                      where apply.TalentId == talentId
+                                         && lowonganAcara == null // HANYA yang BUKAN jobfair (tidak ada di LowonganAcaras)
                                      orderby apply.CreatedAt descending
                                      select new
                                      {
@@ -284,8 +290,6 @@ namespace vocafind_api.Controllers
                                          apply.Status,
                                          apply.Interview,
                                          apply.Location_interview,
-
-
                                          apply.CreatedAt,
                                          apply.AppliedAt,
                                          Lowongan = new
@@ -303,12 +307,80 @@ namespace vocafind_api.Controllers
                                          }
                                      }).ToListAsync();
 
+                _logger.LogInformation($"Ambil lamaran umum: {lamaran.Count} lamaran untuk talent {talentId}");
+
                 return Ok(lamaran);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Gagal mengambil data lamaran");
                 return StatusCode(500, new { message = "Terjadi kesalahan saat mengambil data lamaran." });
+            }
+        }
+
+
+        [Authorize(Roles = "Talent")]
+        [HttpGet("lamaran-jobfair-saya")]
+        public async Task<IActionResult> GetLamaranJobfairSaya()
+        {
+            try
+            {
+                var talentId = User.FindFirst("TalentId")?.Value;
+                if (string.IsNullOrEmpty(talentId))
+                    return Unauthorized(new { message = "Token tidak valid." });
+
+                // AMBIL HANYA LAMARAN JOBFAIR
+                var lamaran = await (from apply in _context.JobApplies
+                                     join lowongan in _context.JobVacancies on apply.LowonganId equals lowongan.LowonganId
+                                     join company in _context.Companies on lowongan.CompanyId equals company.CompanyId
+
+                                     // INNER JOIN ke LowonganAcaras untuk pastikan ini jobfair
+                                     join lowonganAcara in _context.LowonganAcaras
+                                         on apply.LowonganId equals lowonganAcara.LowonganId
+                                     join acara in _context.AcaraJobfairs
+                                         on lowonganAcara.AcaraJobfairId equals acara.Id
+
+                                     where apply.TalentId == talentId
+                                     orderby apply.CreatedAt descending
+                                     select new
+                                     {
+                                         apply.ApplyId,
+                                         apply.LowonganId,
+                                         apply.Status,
+                                         apply.Interview,
+                                         apply.Location_interview,
+                                         apply.CreatedAt,
+                                         apply.AppliedAt,
+                                         Acara = new
+                                         {
+                                             acara.Id,
+                                             acara.NamaAcara,
+                                             acara.TanggalMulaiAcara,
+                                             acara.TanggalSelesaiAcara
+                                         },
+                                         Lowongan = new
+                                         {
+                                             lowongan.Posisi,
+                                             lowongan.DeskripsiPekerjaan,
+                                             lowongan.Lokasi,
+                                             lowongan.Gaji,
+                                             lowongan.OpsiKerjaRemote,
+                                             Company = new
+                                             {
+                                                 company.NamaPerusahaan,
+                                                 company.Logo
+                                             }
+                                         }
+                                     }).ToListAsync();
+
+                _logger.LogInformation($"Ambil lamaran jobfair: {lamaran.Count} lamaran untuk talent {talentId}");
+
+                return Ok(lamaran);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gagal mengambil data lamaran jobfair");
+                return StatusCode(500, new { message = "Terjadi kesalahan saat mengambil data lamaran jobfair." });
             }
         }
 

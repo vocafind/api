@@ -441,11 +441,14 @@ namespace vocafind_api.Controllers
                 if (string.IsNullOrEmpty(talentId))
                     return Unauthorized(new { message = "Token tidak valid." });
 
+                _logger.LogInformation($"Fetching semua lamaran acara for talent: {talentId}");
+
+                // Ambil semua lamaran talent yang lowongannya terdaftar di acara
                 var lamaran = await (from apply in _context.JobApplies
-                                     join applyAcara in _context.ApplyAcaras on apply.ApplyId equals applyAcara.ApplyId
                                      join lowongan in _context.JobVacancies on apply.LowonganId equals lowongan.LowonganId
                                      join company in _context.Companies on lowongan.CompanyId equals company.CompanyId
-                                     join acara in _context.AcaraJobfairs on applyAcara.AcaraJobfairId equals acara.Id
+                                     join lowonganAcara in _context.LowonganAcaras on lowongan.LowonganId equals lowonganAcara.LowonganId
+                                     join acara in _context.AcaraJobfairs on lowonganAcara.AcaraJobfairId equals acara.Id
                                      where apply.TalentId == talentId
                                      orderby apply.CreatedAt descending
                                      select new
@@ -483,14 +486,17 @@ namespace vocafind_api.Controllers
                                          }
                                      }).ToListAsync();
 
+                _logger.LogInformation($"Found {lamaran.Count} lamaran records");
                 return Ok(lamaran);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Gagal mengambil data semua lamaran acara");
-                return StatusCode(500, new { message = "Terjadi kesalahan saat mengambil data lamaran." });
+                _logger.LogError(ex, $"Gagal mengambil data semua lamaran acara. Error: {ex.Message}");
+                return StatusCode(500, new { message = "Terjadi kesalahan saat mengambil data lamaran.", detail = ex.Message });
             }
         }
+
+
 
         //---------------------------------------------------BATAL LAMARAN ACARA----------------------------------------------------
 

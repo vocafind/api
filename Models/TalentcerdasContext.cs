@@ -126,6 +126,7 @@ public partial class TalentcerdasContext : DbContext
     public DbSet<LoginAttempt> LoginAttempts { get; set; }
     public DbSet<BlockedIp> BlockedIps { get; set; }
     public DbSet<SavedJob> SavedJob { get; set; }
+    public DbSet<AcaraQr> AcaraQr { get; set; }
 
 
 

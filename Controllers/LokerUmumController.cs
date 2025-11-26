@@ -35,7 +35,6 @@ namespace vocafind_api.Controllers
             _logger = logger;
             _jwtService = jwtService;
         }
-
         //Get all loker umum
         [HttpGet]
         public async Task<ActionResult<IEnumerable<LokerUmumDTO>>> GetAll()
@@ -43,12 +42,15 @@ namespace vocafind_api.Controllers
             var lokerDTO = await _context.JobVacancies
                 .Include(j => j.Company)
                 .Where(j => j.Status == "aktif")
+
+                // FILTER: Hanya ambil yang BUKAN jobfair (tidak ada di LowonganAcaras)
+                .Where(j => !_context.LowonganAcaras.Any(la => la.LowonganId == j.LowonganId))
+
                 .ProjectTo<LokerUmumDTO>(_mapper.ConfigurationProvider)
                 .ToListAsync();
 
             return Ok(lokerDTO);
         }
-
         // GET: api/LokerUmum/{id}
         [HttpGet("{id}")]
         public async Task<ActionResult<LokerUmumDetailDTO>> GetById(string id)
