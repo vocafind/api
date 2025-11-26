@@ -36,7 +36,7 @@ namespace vocafind_api.Controllers
             try
             {
                 _logger.LogInformation($"=== MEMULAI UPDATE STATUS ===");
-                _logger.LogInformation($"ApplyId: {applyId}, Status: {request?.Status}");
+                _logger.LogInformation($"ApplyId: {applyId}, Status: {request?.Status}, InterviewSlotId: {request?.InterviewSlotId}");
 
                 // Validasi input
                 if (request == null || string.IsNullOrEmpty(request.Status))
@@ -72,10 +72,7 @@ namespace vocafind_api.Controllers
                 var lowonganAcara = applicationQuery.LowonganAcara;
 
                 _logger.LogInformation($"Application ditemukan: {application.ApplyId}");
-                _logger.LogInformation($"Status saat ini: {application.Status}, Talent: {talent?.Nama}");
-                _logger.LogInformation($"ApplicationCode: {application.ApplicationCode}");
-                _logger.LogInformation($"LowonganId: {application.LowonganId}");
-                _logger.LogInformation($"TalentId: {application.TalentId}");
+                _logger.LogInformation($"Status saat ini: {application.Status}, InterviewSlot: {application.InterviewSlot}");
 
                 // Validasi status
                 var validStatuses = new[] { "pending", "review", "interview", "accepted", "rejected" };
@@ -86,10 +83,35 @@ namespace vocafind_api.Controllers
 
                 // Simpan status lama untuk log
                 var oldStatus = application.Status;
+                var oldInterviewSlot = application.InterviewSlot;
 
                 // Update status
                 application.Status = request.Status.ToLower();
                 application.UpdatedAt = DateTime.Now;
+
+                // ✅ UPDATE INTERVIEW SLOT JIKA DIKIRIM
+                if (!string.IsNullOrEmpty(request.InterviewSlotId) && ulong.TryParse(request.InterviewSlotId, out ulong interviewSlotId))
+                {
+                    _logger.LogInformation($"Mengupdate InterviewSlot: {oldInterviewSlot} -> {interviewSlotId}");
+                    application.InterviewSlot = interviewSlotId;
+
+                    // Validasi apakah interview slot exists
+                    var interviewSlotExists = await _context.AcaraInterviewSlots
+                        .AnyAsync(s => s.Id == interviewSlotId);
+
+                    if (!interviewSlotExists)
+                    {
+                        _logger.LogWarning($"InterviewSlotId {interviewSlotId} tidak ditemukan di database");
+                        return BadRequest(new { message = "Interview slot tidak valid." });
+                    }
+                }
+
+                // ✅ UPDATE LOCATION INTERVIEW JIKA DIKIRIM
+                if (!string.IsNullOrEmpty(request.LocationInterview))
+                {
+                    _logger.LogInformation($"Mengupdate LocationInterview: {application.Location_interview} -> {request.LocationInterview}");
+                    application.Location_interview = request.LocationInterview;
+                }
 
                 // Jika status diubah menjadi interview, set reviewed_at
                 if (application.Status == "interview" && application.ReviewedAt == null)
@@ -101,7 +123,7 @@ namespace vocafind_api.Controllers
 
                 // ✅ SAVE CHANGES DULU - Simpan perubahan status ke database
                 await _context.SaveChangesAsync();
-                _logger.LogInformation($"Status berhasil disimpan ke database");
+                _logger.LogInformation($"Status berhasil disimpan ke database. InterviewSlot: {application.InterviewSlot}");
 
                 // DEBUG: Log kondisi untuk generate QR code
                 bool shouldGenerateQR = application.Status == "interview" && oldStatus != "interview";
@@ -125,6 +147,8 @@ namespace vocafind_api.Controllers
                     applicationId = application.ApplyId,
                     oldStatus = oldStatus,
                     newStatus = application.Status,
+                    interviewSlotId = application.InterviewSlot,
+                    locationInterview = application.Location_interview,
                     reviewedAt = application.ReviewedAt,
                     qrGenerated = shouldGenerateQR,
                     qrCodePath = qrCodePath
@@ -136,7 +160,6 @@ namespace vocafind_api.Controllers
                 return StatusCode(500, new { message = "Terjadi kesalahan saat mengupdate status lamaran." });
             }
         }
-
         // Method GenerateInterviewQRCode yang mengembalikan path
         private async Task<string> GenerateInterviewQRCode(JobApply application, Talent talent, JobVacancy lowongan, LowonganAcara lowonganAcara)
         {
@@ -243,7 +266,7 @@ namespace vocafind_api.Controllers
 
                 // Simpan QR code ke folder
                 var fileName = $"qr_interview_{application.ApplicationCode}_{registration.RegistrationCode}.png";
-                var folderPath = Path.Combine(_environment.WebRootPath, "upload", "qr");
+                var folderPath = Path.Combine(_environment.WebRootPath, "uploads", "qr");
 
                 _logger.LogInformation($"Menyimpan ke: {folderPath}");
                 _logger.LogInformation($"WebRootPath: {_environment.WebRootPath}");

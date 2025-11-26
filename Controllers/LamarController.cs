@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using System.Text.Json;
 using vocafind_api.DTO;
 using vocafind_api.Models;
 
@@ -329,7 +330,24 @@ namespace vocafind_api.Controllers
                 if (string.IsNullOrEmpty(talentId))
                     return Unauthorized(new { message = "Token tidak valid." });
 
-                // AMBIL HANYA LAMARAN JOBFAIR
+                // DEBUG: Cek data JobApply terlebih dahulu
+                var jobApplies = await _context.JobApplies
+                    .Where(j => j.TalentId == talentId)
+                    .Select(j => new
+                    {
+                        j.ApplyId,
+                        j.LowonganId,
+                        j.Status,
+                        j.InterviewSlot,
+                        j.Interview,
+                        j.Location_interview,
+                        j.ApplicationCode // ✅ TAMBAHKAN INI
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation($"DEBUG JobApplies: {JsonSerializer.Serialize(jobApplies)}");
+
+                // AMBIL HANYA LAMARAN JOBFAIR dengan data interview yang benar + DATA QR CODE
                 var lamaran = await (from apply in _context.JobApplies
                                      join lowongan in _context.JobVacancies on apply.LowonganId equals lowongan.LowonganId
                                      join company in _context.Companies on lowongan.CompanyId equals company.CompanyId
@@ -340,6 +358,22 @@ namespace vocafind_api.Controllers
                                      join acara in _context.AcaraJobfairs
                                          on lowonganAcara.AcaraJobfairId equals acara.Id
 
+                                     // LEFT JOIN ke AcaraInterviewSlot untuk data interview
+                                     join interviewSlot in _context.AcaraInterviewSlots
+                                         on apply.InterviewSlot equals interviewSlot.Id into slotGroup
+                                     from interviewSlot in slotGroup.DefaultIfEmpty()
+
+                                         // ✅ PERBAIKI: LEFT JOIN ke AcaraQr menggunakan ApplyId
+                                     join acaraQr in _context.AcaraQr
+                                         on apply.ApplyId equals acaraQr.ApplyId into qrGroup
+                                     from acaraQr in qrGroup.DefaultIfEmpty()
+
+                                         // ✅ PERBAIKI: LEFT JOIN ke TalentAcaraRegistration 
+                                     join talentReg in _context.TalentAcaraRegistrations
+                                         on new { TalentId = apply.TalentId, AcaraId = acara.Id } equals
+                                         new { TalentId = talentReg.TalentId, AcaraId = talentReg.AcaraJobfairId } into regGroup
+                                     from talentReg in regGroup.DefaultIfEmpty()
+
                                      where apply.TalentId == talentId
                                      orderby apply.CreatedAt descending
                                      select new
@@ -347,17 +381,38 @@ namespace vocafind_api.Controllers
                                          apply.ApplyId,
                                          apply.LowonganId,
                                          apply.Status,
-                                         apply.Interview,
-                                         apply.Location_interview,
+                                         apply.ApplicationCode, // ✅ TAMBAHKAN APPLICATION CODE
+                                         Interview = interviewSlot != null ? interviewSlot.Slot : apply.Interview,
+                                         LocationInterview = apply.Location_interview,
                                          apply.CreatedAt,
                                          apply.AppliedAt,
+                                         InterviewSlotId = apply.InterviewSlot,
+
+                                         // DEBUG: Tambahkan field untuk troubleshooting
+                                         HasInterviewSlot = apply.InterviewSlot != null,
+                                         InterviewSlotValue = apply.InterviewSlot,
+                                         InterviewSlotTableId = interviewSlot != null ? interviewSlot.Id : (ulong?)null,
+                                         InterviewSlotTableSlot = interviewSlot != null ? interviewSlot.Slot : null,
+
+                                         // DATA ACARA JOBFAIR
                                          Acara = new
                                          {
                                              acara.Id,
                                              acara.NamaAcara,
+                                             acara.Deskripsi,
+                                             acara.Lokasi,
+                                             acara.AlamatAcara,
+                                             acara.Provinsi,
+                                             acara.Kabupaten,
                                              acara.TanggalMulaiAcara,
-                                             acara.TanggalSelesaiAcara
+                                             acara.TanggalSelesaiAcara,
+                                             acara.TanggalAwalPendaftaranAcara,
+                                             acara.TanggalAkhirPendaftaranAcara,
+                                             acara.Status,
+                                             acara.MaxCapacity,
+                                             acara.CurrentCapacity
                                          },
+
                                          Lowongan = new
                                          {
                                              lowongan.Posisi,
@@ -370,10 +425,83 @@ namespace vocafind_api.Controllers
                                                  company.NamaPerusahaan,
                                                  company.Logo
                                              }
-                                         }
+                                         },
+
+                                         // DATA INTERVIEW SLOT JIKA ADA
+                                         InterviewSlotData = interviewSlot != null ? new
+                                         {
+                                             interviewSlot.Id,
+                                             interviewSlot.Slot,
+                                             interviewSlot.CreatedAt
+                                         } : null,
+
+                                         // ✅ DATA QR CODE DARI TABEL ACARA_QR
+                                         QrCodeData = acaraQr != null ? new
+                                         {
+                                             acaraQr.Id,
+                                             acaraQr.ApplicationCode,
+                                             acaraQr.ApplyId,
+                                             acaraQr.RegistrationCode,
+                                             acaraQr.QrCodePath,
+                                             // Tambahkan URL lengkap jika perlu
+                                             QrCodeUrl = !string.IsNullOrEmpty(acaraQr.QrCodePath)
+                                                 ? $"{Request.Scheme}://{Request.Host}/{acaraQr.QrCodePath.TrimStart('/')}"
+                                                 : null
+                                         } : null,
+
+                                         // ✅ DATA REGISTRASI ACARA
+                                         TalentRegistration = talentReg != null ? new
+                                         {
+                                             talentReg.Id,
+                                             talentReg.RegistrationCode,
+                                             talentReg.QrCodePath,
+                                             talentReg.Status,
+                                             talentReg.CheckinStatus,
+                                             talentReg.RegisteredAt,
+                                             talentReg.AttendedAt,
+                                             talentReg.CheckedInAt,
+                                             talentReg.CheckedOutAt,
+                                             // Tambahkan URL lengkap jika perlu
+                                             QrCodeUrl = !string.IsNullOrEmpty(talentReg.QrCodePath)
+                                                 ? $"{Request.Scheme}://{Request.Host}/{talentReg.QrCodePath.TrimStart('/')}"
+                                                 : null
+                                         } : null,
+
+                                         // ✅ FLAG UNTUK FRONTEND
+                                         IsJobfair = true,
+                                         HasQrCode = acaraQr != null || talentReg != null,
+                                         QrCodeSource = acaraQr != null ? "acara_qr" :
+                                                       talentReg != null ? "talent_registration" : "none"
                                      }).ToListAsync();
 
                 _logger.LogInformation($"Ambil lamaran jobfair: {lamaran.Count} lamaran untuk talent {talentId}");
+
+                // DEBUG: Log sample data untuk inspection
+                if (lamaran.Any())
+                {
+                    var sample = lamaran.First();
+                    _logger.LogInformation($"SAMPLE DATA - ApplyId: {sample.ApplyId}, Status: {sample.Status}, " +
+                                         $"HasQrCode: {sample.HasQrCode}, QrCodeSource: {sample.QrCodeSource}");
+
+                    // ✅ DEBUG DETAIL: Cek apakah data QR code ada
+                    if (sample.QrCodeData != null)
+                    {
+                        _logger.LogInformation($"QR CODE DATA FOUND - ApplyId: {sample.QrCodeData.ApplyId}, " +
+                                             $"QR Path: {sample.QrCodeData.QrCodePath}");
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"QR CODE DATA NOT FOUND for ApplyId: {sample.ApplyId}");
+
+                        // ✅ DEBUG: Cek langsung dari database
+                        var directQrCheck = await _context.AcaraQr
+                            .Where(q => q.ApplyId == sample.ApplyId)
+                            .FirstOrDefaultAsync();
+
+                        _logger.LogInformation($"DIRECT QR CHECK - Found: {directQrCheck != null}, " +
+                                             $"ApplyId: {directQrCheck?.ApplyId}, Path: {directQrCheck?.QrCodePath}");
+                    }
+                }
 
                 return Ok(lamaran);
             }
@@ -383,6 +511,9 @@ namespace vocafind_api.Controllers
                 return StatusCode(500, new { message = "Terjadi kesalahan saat mengambil data lamaran jobfair." });
             }
         }
+
+
+
 
         //---------------------------------------------------BATAL LAMARAN----------------------------------------------------
 
